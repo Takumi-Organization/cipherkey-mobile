@@ -85,7 +85,8 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
                     IconButton(onClick = { showGen = true }) { Icon(Icons.Rounded.AutoFixHigh, "Generar contraseña") }
                 } })
             StrengthBar(password)
-            OutlinedTextField(url, { url = it }, label = { Text("Sitio web (https://…)") }, singleLine = true, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+            OutlinedTextField(url, { url = it }, label = { Text("Sitio web o app") }, singleLine = true, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                supportingText = { Text("Web: https://ejemplo.com. App Android: androidapp://<paquete>, p. ej. androidapp://com.example.app (así el autocompletado la reconoce).") })
             OutlinedTextField(category, { category = it }, label = { Text("Categoría") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             val existing = records.map { it.category }.filter { it.isNotBlank() }.distinct().take(8)
             if (existing.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { existing.forEach { c -> SuggestionChip(onClick = { category = c }, label = { Text(c) }) } }
