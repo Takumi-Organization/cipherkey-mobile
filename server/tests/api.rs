@@ -263,3 +263,17 @@ async fn failed_signatures_consume_the_strict_limit() {
     }
     assert_eq!(last, 429);
 }
+
+#[tokio::test]
+async fn same_opid_from_another_device_is_never_taken_as_a_replay() {
+    let s = start(None, true, 1000).await;
+    let pc = new_vault(&s, "v", None).await;
+    let (_, e) = call(&s, &pc, "POST", "/v1/enrollments", Value::Null).await;
+    let mut phone = Dev::new();
+    let (_, r) = post_json(&s, "/v1/enroll", json!({"vaultId":"v","token":e["token"],"devicePublicKey":phone.public(),"deviceName":"m"}), None).await;
+    phone.id = r["deviceId"].as_str().unwrap().to_string();
+    let (_, a) = call(&s, &pc, "POST", "/v1/changes", json!({"ops":[op("mismo","u1",0)]})).await;
+    assert_eq!(a["results"][0]["status"], "ok");
+    let (_, b) = call(&s, &phone, "POST", "/v1/changes", json!({"ops":[op("mismo","u1",0)]})).await;
+    assert_ne!(b["results"][0]["status"], "ok", "otra edición no puede confirmarse con el opId ajeno");
+}

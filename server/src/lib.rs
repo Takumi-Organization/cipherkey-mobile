@@ -84,7 +84,7 @@ impl AppState {
                 seq INTEGER PRIMARY KEY AUTOINCREMENT, vault_id TEXT NOT NULL, uuid TEXT NOT NULL, ver INTEGER NOT NULL,
                 device_id TEXT NOT NULL, deleted INTEGER NOT NULL, blob BLOB NOT NULL, ts INTEGER NOT NULL,
                 UNIQUE(vault_id, uuid));
-             CREATE TABLE IF NOT EXISTS ops(vault_id TEXT NOT NULL, op_id TEXT NOT NULL, ver INTEGER NOT NULL, seq INTEGER NOT NULL,
+             CREATE TABLE IF NOT EXISTS ops(vault_id TEXT NOT NULL, op_id TEXT NOT NULL, device_id TEXT NOT NULL DEFAULT '', ver INTEGER NOT NULL, seq INTEGER NOT NULL,
                 PRIMARY KEY(vault_id, op_id));
              CREATE INDEX IF NOT EXISTS idx_records_vault_seq ON records(vault_id, seq);",
         )?;
@@ -254,7 +254,11 @@ fn valid_pubkey(s: &str) -> bool {
 }
 
 fn valid_id(s: &str) -> bool {
-    !s.is_empty() && s.len() <= 64 && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':')
+    valid_id_max(s, 64)
+}
+
+fn valid_id_max(s: &str, max: usize) -> bool {
+    !s.is_empty() && s.len() <= max && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':')
 }
 
 // ------------------------------------------------------------------------- handlers
@@ -429,7 +433,7 @@ async fn post_changes(State(st): Shared, ConnectInfo(addr): ConnectInfo<SocketAd
     let tx = db.transaction()?;
     let mut results = Vec::new();
     for op in req.ops {
-        if !valid_id(&op.op_id) || !valid_id(&op.uuid) || op.base_ver < 0 {
+        if !valid_id_max(&op.op_id, 160) || !valid_id(&op.uuid) || op.base_ver < 0 {
             results.push(json!({ "opId": op.op_id, "status": "rejected" }));
             continue;
         }
@@ -441,11 +445,16 @@ async fn post_changes(State(st): Shared, ConnectInfo(addr): ConnectInfo<SocketAd
             }
         };
         // Idempotencia: una operación ya aplicada devuelve su resultado original, sin duplicar nada.
-        let prev: Option<(i64, i64)> = tx
-            .query_row("SELECT ver, seq FROM ops WHERE vault_id = ?1 AND op_id = ?2", params![a.vault_id, op.op_id], |r| Ok((r.get(0)?, r.get(1)?)))
+        // Solo es una repetición si la envió el MISMO dispositivo: el opId de otro dispositivo nunca confirma una edición ajena.
+        let prev: Option<(i64, i64, String)> = tx
+            .query_row("SELECT ver, seq, device_id FROM ops WHERE vault_id = ?1 AND op_id = ?2", params![a.vault_id, op.op_id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
             .optional()?;
-        if let Some((ver, seq)) = prev {
-            results.push(json!({ "opId": op.op_id, "status": "ok", "ver": ver, "seq": seq }));
+        if let Some((ver, seq, dev)) = prev {
+            if dev == a.device_id {
+                results.push(json!({ "opId": op.op_id, "status": "ok", "ver": ver, "seq": seq }));
+            } else {
+                results.push(json!({ "opId": op.op_id, "status": "rejected" }));
+            }
             continue;
         }
         let head: Option<(i64, i64, String, bool, Vec<u8>)> = tx
@@ -466,7 +475,7 @@ async fn post_changes(State(st): Shared, ConnectInfo(addr): ConnectInfo<SocketAd
             params![a.vault_id, op.uuid, new_ver, a.device_id, op.deleted as i64, blob, now_ms()],
         )?;
         let seq = tx.last_insert_rowid();
-        tx.execute("INSERT INTO ops(vault_id, op_id, ver, seq) VALUES (?1,?2,?3,?4)", params![a.vault_id, op.op_id, new_ver, seq])?;
+        tx.execute("INSERT INTO ops(vault_id, op_id, device_id, ver, seq) VALUES (?1,?2,?3,?4,?5)", params![a.vault_id, op.op_id, a.device_id, new_ver, seq])?;
         results.push(json!({ "opId": op.op_id, "status": "ok", "ver": new_ver, "seq": seq }));
     }
     tx.commit()?;
