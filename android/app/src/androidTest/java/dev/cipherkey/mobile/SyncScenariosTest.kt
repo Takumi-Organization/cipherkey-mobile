@@ -16,7 +16,7 @@ import java.util.UUID
 
 /**
  * Sincronización extremo a extremo: dos dispositivos (dos [VaultSession] con directorios distintos) contra un servidor
- * REAL en marcha. ESTADO: escritas y compilando; NO ejecutadas hasta que haya servidor y emulador disponibles.
+ * REAL en marcha. ESTADO: ejecutadas 2026-11-13 en emulator-5554 (API 36) contra el servidor local en 127.0.0.1:8787 (vía 10.0.2.2): 3 de 3 OK.
  *
  * Arranque del servidor (en el anfitrión):  CK_ADMIN_TOKEN=<tok> CK_BIND=0.0.0.0:8787 cargo run --release   (en server/)
  * Ejecución:  ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.ck.admin=<tok>
