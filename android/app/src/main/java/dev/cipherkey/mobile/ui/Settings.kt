@@ -18,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import dev.cipherkey.core.model.Record
 import dev.cipherkey.mobile.CipherKeyApp
 import dev.cipherkey.mobile.data.VaultSession
+import dev.cipherkey.mobile.security.MasterPasswordPolicy
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.launch
 
 @Composable
@@ -29,7 +32,7 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup: () -> Unit, onConflicts: () -> Unit) {
+fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup: () -> Unit, onConflicts: () -> Unit, onImport: () -> Unit, onGenerator: () -> Unit) {
     val ctx = LocalContext.current
     val app = ctx.applicationContext as CipherKeyApp
     val activity = ctx.findActivity()
@@ -40,6 +43,17 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
     var secure by remember { mutableStateOf(app.prefs.secureScreen) }
     var bio by remember { mutableStateOf(app.biometric.isEnabled()) }
     var msg by remember { mutableStateOf<String?>(null) }
+    var showChange by remember { mutableStateOf(false) }
+    val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        app.externalFlow = false
+        if (uri != null) scope.launch {
+            try {
+                val bytes = session.exportEncrypted()
+                ctx.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(bytes) }
+                msg = "Copia cifrada exportada"
+            } catch (e: Exception) { msg = "No se pudo exportar: ${e.message}" }
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
         Text("Ajustes", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
@@ -70,6 +84,14 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             Button(onClick = { session.lock() }, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Lock, null); Spacer(Modifier.width(8.dp)); Text("Bloquear ahora") }
         }
 
+        SectionTitle("DATOS")
+        FlatCard(Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { showChange = true }, Modifier.fillMaxWidth()) { Text("Cambiar contraseña maestra") }
+            OutlinedButton(onClick = { app.externalFlow = true; exporter.launch("cipherkey-copia.ckey") }, Modifier.fillMaxWidth()) { Text("Exportar copia cifrada (.ckey)") }
+            OutlinedButton(onClick = onImport, Modifier.fillMaxWidth()) { Text("Importar bóveda (.ckey)") }
+            OutlinedButton(onClick = onGenerator, Modifier.fillMaxWidth()) { Text("Generador de contraseñas") }
+        }
+
         SectionTitle("SINCRONIZACIÓN")
         FlatCard(Modifier.fillMaxWidth()) {
             if (!sync.configured) {
@@ -95,6 +117,40 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Activar autocompletado") }
         }
     }
+    if (showChange) ChangePasswordDialog(session, onDismiss = { showChange = false }, onDone = {
+        showChange = false
+        // la clave cambió: lo guardado para la huella ya no sirve
+        app.biometric.disable(); bio = false
+        msg = "Contraseña cambiada. Vuelve a activar la huella si la usabas."
+    })
+}
+
+@Composable
+private fun ChangePasswordDialog(session: VaultSession, onDismiss: () -> Unit, onDone: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var old by remember { mutableStateOf("") }
+    var new by remember { mutableStateOf("") }
+    var rep by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text("Cambiar contraseña maestra") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            PasswordField(old, { old = it; error = null }, "Contraseña actual")
+            PasswordField(new, { new = it; error = null }, "Nueva contraseña (mín. ${MasterPasswordPolicy.MIN_LENGTH})")
+            PasswordField(rep, { rep = it; error = null }, "Repite la nueva", imeDone = true)
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        } },
+        confirmButton = { TextButton(enabled = !busy, onClick = {
+            val e = MasterPasswordPolicy.validateChange(old, new, rep)
+            if (e != null) { error = e; return@TextButton }
+            busy = true
+            scope.launch {
+                try { session.changePassword(old.toCharArray(), new.toCharArray()); onDone() }
+                catch (_: VaultSession.WrongPassword) { error = "La contraseña actual no es correcta"; busy = false }
+                catch (ex: Exception) { error = ex.message ?: "No se pudo cambiar"; busy = false }
+            }
+        }) { Text("Cambiar") } },
+        dismissButton = { TextButton(enabled = !busy, onClick = onDismiss) { Text("Cancelar") } })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

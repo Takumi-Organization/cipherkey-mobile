@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.CancellationSignal
 import android.service.autofill.AutofillService
+import android.service.autofill.Dataset
 import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.FillResponse
@@ -37,12 +38,16 @@ class CipherKeyAutofillService : AutofillService() {
             .putExtra(AutofillAuthActivity.EXTRA_PASS_ID, parsed.passwordId)
         // MUTABLE: el sistema añade el resultado de la autenticación al intent
         val pi = PendingIntent.getActivity(this, 1001, intent, PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_MUTABLE)
-        val ids = listOfNotNull(parsed.usernameId, parsed.passwordId).toTypedArray()
         val pres = RemoteViews(packageName, R.layout.autofill_item).apply {
             setTextViewText(R.id.af_title, getString(R.string.app_name))
             setTextViewText(R.id.af_subtitle, getString(R.string.autofill_tap))
         }
-        callback.onSuccess(FillResponse.Builder().setAuthentication(ids, pi.intentSender, pres).build())
+        // Autenticación a nivel de Dataset: tras desbloquear y elegir, el sistema rellena directamente (sin segundo desplegable)
+        val ds = Dataset.Builder(pres)
+        parsed.usernameId?.let { ds.setValue(it, null) }
+        ds.setValue(parsed.passwordId, null)
+        ds.setAuthentication(pi.intentSender)
+        callback.onSuccess(FillResponse.Builder().addDataset(ds.build()).build())
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) = callback.onSuccess()

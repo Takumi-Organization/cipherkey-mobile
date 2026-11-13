@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.service.autofill.Dataset
-import android.service.autofill.FillResponse
 import android.view.WindowManager
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillManager
@@ -99,8 +98,7 @@ class AutofillAuthActivity : FragmentActivity() {
         val ds = Dataset.Builder(pres)
         if (userId != null && r.username.isNotEmpty()) ds.setValue(userId, AutofillValue.forText(r.username))
         ds.setValue(passId, AutofillValue.forText(r.password))
-        val response = FillResponse.Builder().addDataset(ds.build()).build()
-        setResult(Activity.RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response))
+        setResult(Activity.RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, ds.build()))
         finish()
     }
 

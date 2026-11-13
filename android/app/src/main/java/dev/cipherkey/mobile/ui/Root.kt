@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import dev.cipherkey.mobile.CipherKeyApp
 import dev.cipherkey.mobile.data.VaultSession
 import kotlinx.coroutines.launch
@@ -20,6 +21,7 @@ private sealed interface Screen {
     data class Editor(val uuid: String?) : Screen
     data object Conflicts : Screen
     data object SyncSetup : Screen
+    data object Import : Screen
 }
 
 /** Raíz: sin bóveda → alta/importación; bloqueada → desbloqueo; abierta → pestañas y pantallas. Al bloquear se pierde la navegación. */
@@ -61,7 +63,8 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
                         onSync = { if (session.sync.value.configured) scope.launch { try { session.syncNow() } catch (_: Exception) {} } else push(Screen.SyncSetup) },
                         onConflicts = { push(Screen.Conflicts) })
                     1 -> VaultTab(session, onOpen = { push(Screen.Detail(it)) }, onAdd = { push(Screen.Editor(null)) }, onGenerator = { showGen = true })
-                    else -> SettingsTab(session, onSecureChanged, onSyncSetup = { push(Screen.SyncSetup) }, onConflicts = { push(Screen.Conflicts) })
+                    else -> SettingsTab(session, onSecureChanged, onSyncSetup = { push(Screen.SyncSetup) }, onConflicts = { push(Screen.Conflicts) },
+                        onImport = { push(Screen.Import) }, onGenerator = { showGen = true })
                 }
             }
         }
@@ -72,6 +75,11 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
             EditorScreen(session, s.uuid, onClose = { pop() }, onDeleted = { setTab(1) })
         }
         Screen.Conflicts -> Box(Modifier.systemBarsPadding()) { ConflictsScreen(session, onBack = { pop() }) }
+        Screen.Import -> Column(Modifier.systemBarsPadding().padding(24.dp)) {
+            Text("Importar bóveda", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(12.dp))
+            ImportPanel(session, onBack = { pop() }, replacing = true, onDone = { pop() })
+        }
         Screen.SyncSetup -> Box(Modifier.systemBarsPadding().imePadding()) { SyncSetupScreen(session, onBack = { pop() }) }
     }
     if (showGen) GeneratorSheet(onDismiss = { showGen = false }, onUse = null)
