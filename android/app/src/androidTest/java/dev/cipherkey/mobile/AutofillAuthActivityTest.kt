@@ -25,8 +25,11 @@ import org.junit.Test
 class AutofillAuthActivityTest {
     private val app get() = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as CipherKeyApp
 
+    private var createdHere = false
+
     @Before fun setUp() {
         assumeTrue("Hay una bóveda real: prueba omitida", !app.session.hasVault())
+        createdHere = true
         runBlocking {
             app.session.create("contraseña-de-prueba".toCharArray())
             app.session.upsert(Record.create("test", 1L).also { it.title = "App"; it.username = "ana"; it.password = "secreto-1"; it.url = "androidapp://com.example.coincide" })
@@ -34,6 +37,7 @@ class AutofillAuthActivityTest {
     }
 
     @After fun tearDown() {
+        if (!createdHere) return // nunca se toca una bóveda real (un @After se ejecuta aunque falle el assume del @Before)
         app.session.lock()
         app.session.files.vault.delete()
     }

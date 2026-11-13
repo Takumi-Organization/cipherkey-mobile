@@ -416,6 +416,7 @@ class VaultSession(private val appContext: Context, val files: VaultFiles = Vaul
             SyncScheduler.retryWhenConnected(appContext)
             throw e
         } finally {
+            _sync.value = _sync.value.copy(running = false)
             publish()
         }
     }
