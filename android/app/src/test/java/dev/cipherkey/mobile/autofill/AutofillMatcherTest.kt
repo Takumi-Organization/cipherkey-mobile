@@ -81,4 +81,10 @@ class AutofillMatcherTest {
     @Test fun sinDominioWebNoCoincidePorUrlWeb() {
         assertTrue(AutofillMatcher.select(FillTarget("com.foo"), listOf(rec("a", "https://example.com"))).isEmpty())
     }
+
+    @Test fun localhostConPuertoYEsquemaHttp() {
+        val t = FillTarget("dev.cipherkey.testapp", "localhost", "http")
+        assertTrue(AutofillMatcher.matches(t, rec("a", "http://localhost:8000/login.html")))
+        assertFalse(AutofillMatcher.matches(t, rec("a", "http://localhost.evil.test:8000/")))
+    }
 }
