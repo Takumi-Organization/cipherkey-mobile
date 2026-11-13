@@ -1,0 +1,9 @@
+target/
+build/
+.gradle/
+*.db
+*.db-*
+local.properties
+*.jks
+keystore.properties
+.idea/
