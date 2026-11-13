@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CipherKey</string>
+    <string name="autofill_tap">Toca para desbloquear y autocompletar</string>
 </resources>
