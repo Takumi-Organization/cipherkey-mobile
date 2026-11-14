@@ -114,6 +114,11 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }
         }
 
+        if (sync.configured) {
+            SectionTitle("PROXIMIDAD (RED LOCAL)")
+            ProximityCard(app)
+        }
+
         SectionTitle("AUTOCOMPLETADO")
         FlatCard(Modifier.fillMaxWidth()) {
             Text("Elige CipherKey como servicio de autocompletado para rellenar usuario y contraseña en otras apps y webs.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -262,5 +267,61 @@ fun ConflictsScreen(session: VaultSession, onBack: () -> Unit) {
 private fun FlowRowButtons(vararg items: Pair<String, () -> Unit>) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
         items.forEach { (l, f) -> OutlinedButton(onClick = f) { Text(l) } }
+    }
+}
+
+
+/** Sincronización directa con dispositivos vinculados en la misma red (sin pasar por el servidor). */
+@Composable
+private fun ProximityCard(app: CipherKeyApp) {
+    val scope = rememberCoroutineScope()
+    val info by app.peers.info.collectAsState()
+    var addr by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var msg by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { while (true) { app.peers.refresh(); kotlinx.coroutines.delay(3000) } }
+
+    fun run(label: String, block: suspend () -> String) {
+        busy = true; msg = label
+        scope.launch {
+            msg = try { block() } catch (e: Exception) { "Error: ${e.message}" }
+            busy = false
+            app.peers.refresh()
+        }
+    }
+
+    FlatCard(Modifier.fillMaxWidth()) {
+        Text(if (info.active) "Escuchando en el puerto ${info.port}" else "Inactiva (desbloquea la bóveda)", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (info.pairingOpen) Text("Vinculación permitida: el otro dispositivo ya puede conectarse.", color = MaterialTheme.colorScheme.primary)
+        (msg ?: info.message)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        Spacer(Modifier.height(8.dp))
+        Text("Dispositivos vinculados", style = MaterialTheme.typography.labelLarge)
+        if (info.peers.isEmpty()) Text("Ninguno todavía.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        info.peers.forEach { p ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(p.name.ifEmpty { p.deviceId })
+                    Text(if (p.lastSync == 0L) "Sin sincronizar" else "Última vez: ${formatDate(p.lastSync)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                TextButton(onClick = { app.peers.unlink(p.deviceId) }) { Text("Desvincular", color = MaterialTheme.colorScheme.error) }
+            }
+        }
+        if (info.nearby.isNotEmpty()) {
+            Text("Cercanos en la red", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+            info.nearby.forEach { n ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(n.address, Modifier.weight(1f))
+                    TextButton(enabled = !busy, onClick = { run("Conectando…") { val r = app.peers.pairWith(n.address); "Vinculado con ${r.peerName()}" } }) { Text("Vincular") }
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(addr, { addr = it }, label = { Text("Dirección (IP:puerto)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        FlowRowButtons(
+            "Vincular por dirección" to { if (!busy && addr.isNotBlank()) run("Conectando… compara el código en ambos") { val r = app.peers.pairWith(addr); "Vinculado con ${r.peerName()}" } },
+            "Sincronizar con la dirección" to { if (!busy && addr.isNotBlank()) run("Sincronizando…") { val r = app.peers.syncWith(addr); "Sincronizado: ${r.received()} recibidos, ${r.sent()} enviados" } },
+            "Sincronizar con cercanos" to { if (!busy) run("Sincronizando…") { val n = app.peers.syncNearby(); if (n > 0) "Sincronizado con $n dispositivo(s)" else "No hay dispositivos vinculados cerca" } },
+            "Permitir vinculación (2 min)" to { app.peers.allowPairing() },
+        )
     }
 }

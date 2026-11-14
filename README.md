@@ -63,6 +63,19 @@ A: alta de la bóveda en el servidor, emparejado de un segundo dispositivo y con
 B: ediciones concurrentes de campos distintos, fusión automática sin conflicto.
 C: ediciones concurrentes del mismo campo, conflicto con ambas versiones, resolución y convergencia.
 
+## Sincronización en proximidad (misma red)
+
+Con la sincronización configurada y la bóveda desbloqueada, la app escucha en `47890/tcp`, anuncia y descubre dispositivos por
+multidifusión UDP (`47891`) y puede sincronizar directamente con el escritorio. Ajustes > Proximidad: vincular (código de 6
+dígitos que debe coincidir en ambos), sincronizar, desvincular. Protocolo, canal seguro (X25519 + AES-GCM + firma Ed25519), SAS,
+fusión a tres bandas y límites: ver `docs/adr/0001-sincronizacion-en-proximidad.md` del repositorio de escritorio
+(`CipherKey-Rediseño`).
+
+- Solo vive con la app abierta y desbloqueada; usa `MulticastLock` (permisos `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE`).
+- Android 17 (target 37) exigirá `ACCESS_LOCAL_NETWORK`; hoy target 36 y no se declara (no verificado en un dispositivo con Android 17).
+- Verificado: pruebas JVM, lint y `assembleDebug` OK; instalado en móvil físico. **No** probada la sincronización real con el
+  escritorio sobre una bóveda de prueba en el móvil.
+
 ## Autocompletado
 
 Activar en Ajustes de la app (o Ajustes del sistema > Autocompletado). El servicio siempre responde con una autenticación:

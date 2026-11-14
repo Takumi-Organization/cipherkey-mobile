@@ -28,6 +28,7 @@ private sealed interface Screen {
 @Composable
 fun AppRoot(session: VaultSession, onSecureChanged: () -> Unit) {
     val state by session.state.collectAsState()
+    SasDialog()
     when (state) {
         VaultSession.State.NoVault -> OnboardingScreen(session)
         VaultSession.State.Locked -> UnlockScreen(session, autoBiometric = true)
@@ -83,4 +84,26 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
         Screen.SyncSetup -> Box(Modifier.systemBarsPadding().imePadding()) { SyncSetupScreen(session, onBack = { pop() }) }
     }
     if (showGen) GeneratorSheet(onDismiss = { showGen = false }, onUse = null)
+}
+
+
+/** Código de seguridad de la vinculación por proximidad: debe coincidir con el del otro dispositivo. */
+@Composable
+private fun SasDialog() {
+    val app = LocalContext.current.applicationContext as CipherKeyApp
+    val req by app.peers.sas.collectAsState()
+    val r = req ?: return
+    AlertDialog(
+        onDismissRequest = { r.answer.complete(false) },
+        title = { Text("Código de seguridad") },
+        text = {
+            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                Text(if (r.incoming) "«${r.peer}» quiere vincularse con este dispositivo." else "Vinculando con «${r.peer}».")
+                Text(r.sas.substring(0, 3) + " " + r.sas.substring(3), style = MaterialTheme.typography.displaySmall)
+                Text("Comprueba que el otro dispositivo muestra este mismo código antes de aceptar.")
+            }
+        },
+        confirmButton = { TextButton(onClick = { r.answer.complete(true) }) { Text("Coincide") } },
+        dismissButton = { TextButton(onClick = { r.answer.complete(false) }) { Text("No coincide") } },
+    )
 }

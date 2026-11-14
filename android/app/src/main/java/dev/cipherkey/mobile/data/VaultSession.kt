@@ -431,6 +431,21 @@ class VaultSession(private val appContext: Context, val files: VaultFiles = Vaul
         }
     }
 
+    /**
+     * Ejecuta {@code work} sobre el documento con el cerrojo de la sesión y guarda después (lo usa la sincronización directa
+     * entre dispositivos). Falla si la bóveda está bloqueada. Cada llamada es corta: nunca se mantiene durante la red.
+     */
+    fun <T> withDocument(work: (VaultDocument) -> T): T = locked {
+        val d = requireDoc()
+        try { work(d) } finally { persist() }
+    }
+
+    /** Solo lectura: no vuelve a cifrar ni a escribir el fichero (para refrescar listas sin desgastar el almacenamiento). */
+    fun <T> readDocument(work: (VaultDocument) -> T): T = locked { work(requireDoc()) }
+
+    /** Reexpone los registros tras un cambio hecho por otro camino (p. ej. sincronización directa). */
+    fun refreshFromDocument() { locked { publish() } }
+
     /** Usada por WorkManager con la bóveda desbloqueada en este proceso. */
     fun isUnlocked() = _state.value == State.Unlocked
 
