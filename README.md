@@ -72,9 +72,21 @@ se desbloquea (maestra o huella) y se rellena el registro elegido. Solo se ofrec
 - App: la URL del registro debe ser `androidapp://<paquete>` exacto.
 Chrome no usa servicios de terceros por defecto; sí lo hacen las apps y las WebView (en `localhost` o https).
 
-## Pendientes y límites conocidos
+## Verificación en emulador (API 36, 2026-11-14)
 
-- Sin icono propio de ajustes para cambiar el servidor de sync una vez activada (hay que desactivar y volver a activar).
-- La huella solo se ha probado donde se indica en el informe de la sesión; el flujo con `BiometricPrompt` necesita un dispositivo con huella enrolada.
+Hecho en pantalla: crear bóveda, editar, ajustes, huella (activar con `BiometricPrompt`, desbloquear con ella y usarla en el autofill),
+autofill con app y WebView de prueba (relleno, sin coincidencia, dominio parecido, rebaja https a http), sincronización desde la UI
+(indicador "Todo sincronizado"), emparejado con código mostrado en pantalla y segundo dispositivo simulado con
+`SecondDeviceTest` (`am instrument -e ck.pair <código>`), lista de dispositivos y revocación, exportar e importar `.ckey` con el selector del sistema.
+La huella se enrola en el emulador con PIN + `BIOMETRIC_ENROLL` + `adb emu finger touch 1`.
+
+Bugs que salieron de esa verificación y están corregidos: indicador de sync que no se apagaba, y cierre de la app al abrir el selector de archivos
+(`biometric` arrastraba `fragment` 1.2.5: se fija 1.8.9 en `libs.versions.toml`).
+
+## Límites conocidos
+
+- Cambiar el servidor de sincronización exige desactivar y volver a activar.
+- Importar una bóveda descarta la identidad de sincronización (queda como bóveda local; la anterior se aparta como `.bak`).
 - Sin guardado de credenciales nuevas desde el autocompletado (`onSaveRequest` no hace nada).
 - La lista de sufijos públicos del emparejador es mínima, no la Public Suffix List completa.
+- Chrome no usa servicios de terceros por defecto; la prueba de autofill en navegador real no se ha hecho.

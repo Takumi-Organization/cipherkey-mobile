@@ -57,6 +57,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.biometric)
+    // biometric arrastra fragment 1.2.5, que rompe los selectores de archivos (requestCode de 16 bits): se fija uno actual
+    implementation(libs.androidx.fragment)
     implementation(libs.kotlinx.coroutines.android)
     implementation(project(":core"))
 
