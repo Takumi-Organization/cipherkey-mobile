@@ -44,6 +44,8 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
     var bio by remember { mutableStateOf(app.biometric.isEnabled()) }
     var msg by remember { mutableStateOf<String?>(null) }
     var showChange by remember { mutableStateOf(false) }
+    var pairCode by remember { mutableStateOf<String?>(null) }
+    var devices by remember { mutableStateOf<Pair<String, List<dev.cipherkey.core.sync.ServerClient.DeviceInfo>>?>(null) }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
         app.externalFlow = false
         if (uri != null) scope.launch {
@@ -104,6 +106,10 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
                     Button(onClick = { scope.launch { try { session.syncNow(); msg = "Sincronizado" } catch (e: Exception) { msg = null } } }) { Text("Sincronizar") }
                     if (sync.conflicts > 0) OutlinedButton(onClick = onConflicts) { Text("${sync.conflicts} conflicto(s)") }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { scope.launch { try { pairCode = session.newPairingCode().encode() } catch (e: Exception) { msg = "No se pudo crear el código: ${e.message}" } } }) { Text("Emparejar otro dispositivo") }
+                    OutlinedButton(onClick = { scope.launch { try { devices = session.devices() } catch (e: Exception) { msg = "No se pudo leer la lista: ${e.message}" } } }) { Text("Dispositivos") }
+                }
                 TextButton(onClick = { scope.launch { session.disableSync(); msg = "Sincronización desactivada" } }) { Text("Desactivar", color = MaterialTheme.colorScheme.error) }
             }
         }
@@ -116,6 +122,30 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
                 try { ctx.startActivity(i) } catch (_: Exception) { msg = "Ábrelo en Ajustes > Contraseñas y cuentas" }
             }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Activar autocompletado") }
         }
+    }
+    pairCode?.let { code ->
+        AlertDialog(onDismissRequest = { pairCode = null }, title = { Text("Código de emparejamiento") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Escríbelo en el otro dispositivo (Sincronización > Emparejar con código). Caduca y solo vale una vez. Contiene la clave de sincronización: no lo compartas.", style = MaterialTheme.typography.bodySmall)
+                androidx.compose.foundation.text.selection.SelectionContainer { Text(code, style = MaterialTheme.typography.bodySmall) }
+            } },
+            confirmButton = { TextButton(onClick = { copySecret(ctx, code, app.prefs.clipboardClearSeconds); msg = "Código copiado" }) { Text("Copiar") } },
+            dismissButton = { TextButton(onClick = { pairCode = null }) { Text("Cerrar") } })
+    }
+    devices?.let { (me, list) ->
+        AlertDialog(onDismissRequest = { devices = null }, title = { Text("Dispositivos") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                list.forEach { d ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(d.name() + if (d.deviceId() == me) " (este)" else "")
+                            Text(if (d.revoked()) "Revocado" else "Activo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (d.deviceId() != me && !d.revoked()) TextButton(onClick = { scope.launch { try { session.revoke(d.deviceId()); devices = session.devices() } catch (e: Exception) { msg = "No se pudo revocar: ${e.message}" } } }) { Text("Revocar", color = MaterialTheme.colorScheme.error) }
+                    }
+                }
+            } },
+            confirmButton = { TextButton(onClick = { devices = null }) { Text("Cerrar") } })
     }
     if (showChange) ChangePasswordDialog(session, onDismiss = { showChange = false }, onDone = {
         showChange = false
