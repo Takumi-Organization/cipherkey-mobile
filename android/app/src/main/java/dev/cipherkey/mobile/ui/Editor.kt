@@ -5,8 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,95 +65,107 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
         }
     }
 
+    val k = kamiTokens
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = k.paper,
         topBar = {
-            TopAppBar(title = { Text(if (original == null) "Nueva contraseña" else "Editar") },
-                navigationIcon = { IconButton(onClick = { if (dirty) confirmDiscard = true else onClose() }) { Icon(Icons.Rounded.Close, "Cerrar") } },
-                actions = { Button(onClick = { save() }, enabled = !saving, modifier = Modifier.padding(end = 8.dp)) { Text("Guardar") } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
+            KTopBar(if (original == null) "Nueva contraseña" else "Editar", onBack = { if (dirty) confirmDiscard = true else onClose() }, backIcon = KI.Close, backDescription = "Cerrar") {
+                KButton("Guardar", { save() }, Modifier.padding(end = 12.dp), enabled = !saving, icon = KI.Check)
+            }
         },
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).imePadding().padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            OutlinedTextField(title, { title = it; error = null }, label = { Text("Servicio *") }, singleLine = true, modifier = Modifier.fillMaxWidth(), isError = error != null && title.isBlank())
-            OutlinedTextField(username, { username = it }, label = { Text("Usuario o correo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(password, { password = it }, label = { Text("Contraseña") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+            error?.let { Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Tag("ERROR", k.error, KI.Warn); Spacer(Modifier.width(8.dp)); Text(it, color = k.error, style = MaterialTheme.typography.bodySmall) } }
+            SectionLabel("01 // IDENTIDAD", Modifier.padding(top = 8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SiteAvatar(title.ifBlank { "?" }, url, 48)
+                Spacer(Modifier.width(14.dp))
+                Text("Así se verá en tu lista. El color sale del dominio; no se consulta ninguna red.", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
+            }
+            KField(title, { title = it; error = null }, "Servicio *", isError = error != null && title.isBlank())
+            KField(username, { username = it }, "Usuario o correo")
+            SectionLabel("02 // SECRETO", Modifier.padding(top = 8.dp))
+            KField(password, { password = it }, "Contraseña", mono = true,
                 visualTransformation = if (showPwd) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                trailingIcon = { Row {
-                    IconButton(onClick = { showPwd = !showPwd }) { Icon(if (showPwd) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, "Mostrar u ocultar") }
-                    IconButton(onClick = { showGen = true }) { Icon(Icons.Rounded.AutoFixHigh, "Generar contraseña") }
+                trailing = { Row {
+                    KIconButton(if (showPwd) KI.EyeOff else KI.Eye, if (showPwd) "Ocultar contraseña" else "Mostrar contraseña", { showPwd = !showPwd })
+                    KIconButton(KI.Spark, "Generar contraseña", { showGen = true }, tint = k.accentText)
                 } })
             StrengthBar(password)
-            OutlinedTextField(url, { url = it }, label = { Text("Sitio web o app") }, singleLine = true, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                supportingText = { Text("Web: https://ejemplo.com. App Android: androidapp://<paquete>, p. ej. androidapp://com.example.app (así el autocompletado la reconoce).") })
-            OutlinedTextField(category, { category = it }, label = { Text("Categoría") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            KField(totp, { totp = it }, "Secreto 2FA (opcional)", mono = true)
+            SectionLabel("03 // ORGANIZACIÓN", Modifier.padding(top = 8.dp))
+            KField(url, { url = it }, "Sitio web o app", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                supporting = "Web: https://ejemplo.com. App Android: androidapp://<paquete>, p. ej. androidapp://com.example.app (así el autocompletado la reconoce).")
+            KField(category, { category = it }, "Categoría")
             val existing = records.map { it.category }.filter { it.isNotBlank() }.distinct().take(8)
-            if (existing.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { existing.forEach { c -> SuggestionChip(onClick = { category = c }, label = { Text(c) }) } }
-            OutlinedTextField(tags, { tags = it }, label = { Text("Etiquetas (separadas por comas)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(notes, { notes = it }, label = { Text("Notas") }, minLines = 3, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(totp, { totp = it }, label = { Text("Secreto 2FA (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            if (existing.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { existing.forEach { c -> KChip(c, category == c, { category = c }) } }
+            KField(tags, { tags = it }, "Etiquetas (separadas por comas)")
+            KField(notes, { notes = it }, "Notas", singleLine = false, minLines = 3)
 
-            SectionTitle("CAMPOS PERSONALIZADOS", Modifier.padding(top = 4.dp))
+            SectionLabel("04 // CAMPOS PERSONALIZADOS", Modifier.padding(top = 8.dp))
             custom.forEachIndexed { i, c ->
-                FlatCard(Modifier.fillMaxWidth()) {
-                    OutlinedTextField(c.name, { custom[i] = Record.Custom(it, c.value, c.secret) }, label = { Text("Nombre") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                KCard(Modifier.fillMaxWidth()) {
+                    KField(c.name, { custom[i] = Record.Custom(it, c.value, c.secret) }, "Nombre")
                     Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(c.value, { custom[i] = Record.Custom(c.name, it, c.secret) }, label = { Text("Valor") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    KField(c.value, { custom[i] = Record.Custom(c.name, it, c.secret) }, "Valor",
                         visualTransformation = if (c.secret) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Switch(c.secret, { custom[i] = Record.Custom(c.name, c.value, it) }); Spacer(Modifier.width(8.dp)); Text("Secreto", Modifier.weight(1f))
-                        TextButton(onClick = { custom.removeAt(i) }) { Text("Quitar", color = MaterialTheme.colorScheme.error) }
+                        KSwitchRow("Secreto", c.secret, { custom[i] = Record.Custom(c.name, c.value, it) }, Modifier.weight(1f))
+                        KButton("Quitar", { custom.removeAt(i) }, kind = KKind.Danger, icon = KI.Trash)
                     }
                 }
             }
-            OutlinedButton(onClick = { custom.add(Record.Custom("", "", false)) }, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Add, null); Spacer(Modifier.width(8.dp)); Text("Añadir campo") }
-            Row(verticalAlignment = Alignment.CenterVertically) { Switch(favorite, { favorite = it }); Spacer(Modifier.width(12.dp)); Text("Favorita") }
-            if (original != null) {
-                TextButton(onClick = { confirmDelete = true }, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error); Spacer(Modifier.width(8.dp)); Text("Eliminar", color = MaterialTheme.colorScheme.error) }
-            }
+            KButton("Añadir campo", { custom.add(Record.Custom("", "", false)) }, Modifier.fillMaxWidth(), kind = KKind.Secondary, icon = KI.Plus)
+            KSwitchRow("Favorita", favorite, { favorite = it })
+            if (original != null) KButton("Eliminar", { confirmDelete = true }, Modifier.fillMaxWidth(), kind = KKind.Danger, icon = KI.Trash)
         }
     }
     if (showGen) GeneratorSheet(onDismiss = { showGen = false }, onUse = { password = it; showPwd = true; showGen = false })
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("¿Eliminar «${original?.title}»?") },
         text = { Text("Se eliminará también de tus otros dispositivos al sincronizar.") },
-        confirmButton = { TextButton(onClick = { confirmDelete = false; scope.launch { session.delete(uuid!!); haptic.performHapticFeedback(HapticFeedbackType.Confirm); onDeleted() } }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } })
+        confirmButton = { KTextButton(onClick = { confirmDelete = false; scope.launch { session.delete(uuid!!); haptic.performHapticFeedback(HapticFeedbackType.Confirm); onDeleted() } }) { Text("Eliminar", color = k.error) } },
+        dismissButton = { KTextButton(onClick = { confirmDelete = false }) { Text("Cancelar") } })
     if (confirmDiscard) AlertDialog(onDismissRequest = { confirmDiscard = false }, title = { Text("¿Descartar los cambios?") },
-        confirmButton = { TextButton(onClick = { confirmDiscard = false; onClose() }) { Text("Descartar") } },
-        dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Seguir editando") } })
+        confirmButton = { KTextButton(onClick = { confirmDiscard = false; onClose() }) { Text("Descartar") } },
+        dismissButton = { KTextButton(onClick = { confirmDiscard = false }) { Text("Seguir editando") } })
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GeneratorSheet(onDismiss: () -> Unit, onUse: ((String) -> Unit)?) {
     val haptic = LocalHapticFeedback.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    val k = kamiTokens
     var o by remember { mutableStateOf(PasswordGenerator.Options()) }
     var out by remember { mutableStateOf(PasswordGenerator.generate(o)) }
     fun regen(n: PasswordGenerator.Options = o) { o = n; out = try { PasswordGenerator.generate(n) } catch (_: IllegalArgumentException) { "" } }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Generador de contraseñas", style = MaterialTheme.typography.titleLarge)
-            FlatCard(Modifier.fillMaxWidth()) {
-                Text(out.ifEmpty { "Elige al menos un tipo de carácter" }, style = MaterialTheme.typography.titleMedium.merge(Mono))
-                Spacer(Modifier.height(8.dp)); StrengthBar(out)
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = k.raised, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
+        dragHandle = { Box(Modifier.padding(top = 12.dp).size(width = 36.dp, height = 3.dp).background(k.line3)) }) {
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("05 // GENERADOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)
+            Text("Contraseña nueva", style = MaterialTheme.typography.titleLarge)
+            KCard(Modifier.fillMaxWidth(), container = k.paper) {
+                if (out.isEmpty()) Text("Elige al menos un tipo de carácter", color = k.inkMuted)
+                else Text(colorizedPassword(out), style = MaterialTheme.typography.titleMedium.merge(Mono), modifier = Modifier.semantics { contentDescription = "Contraseña generada, ${out.length} caracteres" })
+                Spacer(Modifier.height(10.dp)); StrengthBar(out)
             }
-            Text("Longitud: ${o.length}")
-            Slider(value = o.length.toFloat(), onValueChange = { regen(o.copy(length = it.toInt())) }, valueRange = PasswordGenerator.MIN_LENGTH.toFloat()..PasswordGenerator.MAX_LENGTH.toFloat())
-            @Composable fun opt(label: String, v: Boolean, set: (Boolean) -> PasswordGenerator.Options) {
-                Row(verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f)); Switch(v, { regen(set(it)) }) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("LONGITUD", style = MaterialTheme.typography.labelMedium, color = k.inkMuted, modifier = Modifier.weight(1f))
+                Text("${o.length}", style = MaterialTheme.typography.titleMedium, color = k.accentText)
             }
-            opt("Mayúsculas (A-Z)", o.upper) { o.copy(upper = it) }
-            opt("Minúsculas (a-z)", o.lower) { o.copy(lower = it) }
-            opt("Números (0-9)", o.digits) { o.copy(digits = it) }
-            opt("Símbolos (!@#…)", o.symbols) { o.copy(symbols = it) }
-            opt("Excluir caracteres ambiguos (O/0, l/1…)", o.excludeAmbiguous) { o.copy(excludeAmbiguous = it) }
+            Slider(value = o.length.toFloat(), onValueChange = { regen(o.copy(length = it.toInt())) }, valueRange = PasswordGenerator.MIN_LENGTH.toFloat()..PasswordGenerator.MAX_LENGTH.toFloat(),
+                colors = SliderDefaults.colors(thumbColor = k.accent, activeTrackColor = k.accent, inactiveTrackColor = k.line2, activeTickColor = k.accent, inactiveTickColor = k.line2))
+            KSwitchRow("Mayúsculas (A-Z)", o.upper, { regen(o.copy(upper = it)) })
+            KSwitchRow("Minúsculas (a-z)", o.lower, { regen(o.copy(lower = it)) })
+            KSwitchRow("Números (0-9)", o.digits, { regen(o.copy(digits = it)) })
+            KSwitchRow("Símbolos (!@#…)", o.symbols, { regen(o.copy(symbols = it)) })
+            KSwitchRow("Excluir caracteres ambiguos (O/0, l/1…)", o.excludeAmbiguous, { regen(o.copy(excludeAmbiguous = it)) })
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.ContextClick); regen() }, Modifier.weight(1f)) { Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("Otra") }
-                if (onUse != null) Button(onClick = { onUse(out) }, enabled = out.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Usar") }
-                else Button(onClick = { copySecret(ctx, out, 30); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }, enabled = out.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Copiar") }
+                KButton("Otra", { haptic.performHapticFeedback(HapticFeedbackType.ContextClick); regen() }, Modifier.weight(1f), kind = KKind.Secondary, icon = KI.Sync)
+                if (onUse != null) KButton("Usar", { onUse(out) }, Modifier.weight(1f), enabled = out.isNotEmpty(), icon = KI.Check)
+                else KButton("Copiar", { copySecret(ctx, out, 30); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }, Modifier.weight(1f), enabled = out.isNotEmpty(), icon = KI.Copy)
             }
         }
     }

@@ -10,13 +10,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -35,25 +39,26 @@ private const val MIN_PASSWORD = 10
 @Composable
 fun PasswordField(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier, imeDone: Boolean = false, onDone: () -> Unit = {}) {
     var visible by remember { mutableStateOf(false) }
-    OutlinedTextField(
-        value = value, onValueChange = onChange, label = { Text(label) }, singleLine = true, modifier = modifier.fillMaxWidth(),
+    KField(
+        value = value, onChange = onChange, label = label, modifier = modifier, mono = true,
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = if (imeDone) androidx.compose.ui.text.input.ImeAction.Done else androidx.compose.ui.text.input.ImeAction.Next),
         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { onDone() }),
-        trailingIcon = { IconButton(onClick = { visible = !visible }) { Icon(if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (visible) "Ocultar" else "Mostrar") } },
+        trailing = { KIconButton(if (visible) KI.EyeOff else KI.Eye, if (visible) "Ocultar contraseña" else "Mostrar contraseña", { visible = !visible }) },
     )
 }
 
+/** Cabecera de las pantallas de entrada: emblema plano, nombre y marcador de sección. */
 @Composable
-private fun Hero(icon: @Composable () -> Unit, title: String, subtitle: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(72.dp)) {
-            Box(contentAlignment = Alignment.Center) { icon() }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+private fun Hero(kicker: String, title: String, subtitle: String, open: Boolean = false) {
+    val k = kamiTokens
+    Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+        VaultEmblem(88, open)
+        Spacer(Modifier.height(24.dp))
+        Text(kicker, style = MaterialTheme.typography.labelMedium, color = k.accentText)
+        Text(title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.padding(top = 4.dp).semantics { heading() })
         Spacer(Modifier.height(6.dp))
-        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = k.inkMuted)
     }
 }
 
@@ -68,23 +73,22 @@ fun OnboardingScreen(session: VaultSession) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding(), verticalArrangement = Arrangement.Center) {
-        Hero({ Icon(Icons.Rounded.Shield, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(38.dp)) },
-            "CipherKey", "Tus contraseñas, cifradas en este dispositivo.")
+    Column(Modifier.fillMaxSize().dotGrid(kamiTokens.line1).verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding(), verticalArrangement = Arrangement.Center) {
+        Hero("00 // BIENVENIDA", "CipherKey", "Tus contraseñas, cifradas en este dispositivo.")
         Spacer(Modifier.height(32.dp))
         AnimatedContent(mode, label = "onboarding") { m ->
             when (m) {
                 "choose" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { mode = "create" }, Modifier.fillMaxWidth().height(52.dp)) { Text("Crear una bóveda nueva") }
-                    OutlinedButton(onClick = { mode = "import" }, Modifier.fillMaxWidth().height(52.dp)) { Text("Importar bóveda de escritorio (.ckey)") }
+                    KButton("Crear una bóveda nueva", { mode = "create" }, Modifier.fillMaxWidth(), icon = KI.Plus)
+                    KButton("Importar bóveda de escritorio (.ckey)", { mode = "import" }, Modifier.fillMaxWidth(), kind = KKind.Secondary, icon = KI.Import)
                 }
                 "create" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Elige una contraseña maestra larga. Si la olvidas no hay recuperación posible.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Elige una contraseña maestra larga. Si la olvidas no hay recuperación posible.", color = kamiTokens.inkMuted)
                     PasswordField(pwd, { pwd = it }, "Contraseña maestra (mín. $MIN_PASSWORD caracteres)")
                     StrengthBar(pwd)
                     PasswordField(pwd2, { pwd2 = it }, "Repite la contraseña", imeDone = true)
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    Button(enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp), onClick = {
+                    error?.let { ErrorLine(it) }
+                    KButton("Crear bóveda", busy = busy, enabled = !busy, modifier = Modifier.fillMaxWidth(), icon = KI.Lock, onClick = {
                         when {
                             pwd.length < MIN_PASSWORD -> error = "Usa al menos $MIN_PASSWORD caracteres"
                             pwd != pwd2 -> error = "Las contraseñas no coinciden"
@@ -94,8 +98,8 @@ fun OnboardingScreen(session: VaultSession) {
                                     catch (e: Exception) { error = e.message; busy = false }
                                 } }
                         }
-                    }) { if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp) else Text("Crear bóveda") }
-                    TextButton(onClick = { mode = "choose"; error = null }) { Text("Atrás") }
+                    })
+                    KButton("Atrás", { mode = "choose"; error = null }, Modifier.fillMaxWidth(), kind = KKind.Secondary)
                 }
                 else -> ImportPanel(session, onBack = { mode = "choose" }, replacing = false)
             }
@@ -129,17 +133,15 @@ fun ImportPanel(session: VaultSession, onBack: () -> Unit, replacing: Boolean, o
         if (report != null) {
             val r = report!!
             Text("Importadas ${r.entries} entradas" + if (r.migratedFromV2) " (migradas desde el formato v2)" else "" + ".", style = MaterialTheme.typography.titleMedium)
-            r.previousVaultBackup?.let { Text("La bóveda anterior se conserva como copia: $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            Text("Tu archivo original no se ha modificado.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = onDone, Modifier.fillMaxWidth()) { Text("Continuar") }
+            r.previousVaultBackup?.let { Text("La bóveda anterior se conserva como copia: $it", color = kamiTokens.inkMuted) }
+            Text("Tu archivo original no se ha modificado.", color = kamiTokens.inkMuted)
+            KButton("Continuar", onDone, Modifier.fillMaxWidth(), icon = KI.Check)
         } else {
-            if (replacing) Text("Se importará como bóveda de este dispositivo. La actual se aparta como copia recuperable, no se borra.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = { app.externalFlow = true; picker.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth().height(52.dp)) {
-                Icon(Icons.Rounded.FileOpen, null); Spacer(Modifier.width(8.dp)); Text(picked?.first ?: "Elegir archivo .ckey")
-            }
+            if (replacing) Text("Se importará como bóveda de este dispositivo. La actual se aparta como copia recuperable, no se borra.", color = kamiTokens.inkMuted)
+            KButton(picked?.first ?: "Elegir archivo .ckey", { app.externalFlow = true; picker.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth(), kind = KKind.Secondary, icon = KI.Folder)
             if (picked != null) {
                 PasswordField(pwd, { pwd = it }, "Contraseña maestra de ese archivo", imeDone = true)
-                Button(enabled = !busy && pwd.isNotEmpty(), modifier = Modifier.fillMaxWidth().height(52.dp), onClick = {
+                KButton("Importar", busy = busy, enabled = !busy && pwd.isNotEmpty(), modifier = Modifier.fillMaxWidth(), icon = KI.Import, onClick = {
                     busy = true; error = null
                     scope.launch {
                         try {
@@ -149,10 +151,10 @@ fun ImportPanel(session: VaultSession, onBack: () -> Unit, replacing: Boolean, o
                         catch (e: Exception) { error = e.message ?: "No se pudo importar" }
                         busy = false
                     }
-                }) { if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp) else Text("Importar") }
+                })
             }
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            TextButton(onClick = onBack) { Text("Atrás") }
+            error?.let { ErrorLine(it) }
+            KButton("Atrás", onBack, Modifier.fillMaxWidth(), kind = KKind.Secondary)
         }
     }
 }
@@ -185,35 +187,45 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
     }
     LaunchedEffect(Unit) { if (bioReady && autoBiometric) tryBiometric() }
 
-    val pulse = rememberInfiniteTransition(label = "pulse").animateFloat(1f, 1.06f, infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "s")
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding().imePadding(), verticalArrangement = Arrangement.Center) {
-        Box(Modifier.fillMaxWidth().scale(pulse.value), contentAlignment = Alignment.Center) {
-            Hero({ Icon(Icons.Rounded.Lock, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(38.dp)) },
-                "Bóveda bloqueada", "Introduce tu contraseña maestra")
-        }
+    val reduced = rememberReducedMotion()
+    val pulse = if (bioReady && !reduced) rememberInfiniteTransition(label = "pulse").animateFloat(0.55f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "a").value else 1f
+    val k = kamiTokens
+    Column(Modifier.fillMaxSize().dotGrid(k.line1).verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding().imePadding(), verticalArrangement = Arrangement.Center) {
+        Hero("00 // BÓVEDA BLOQUEADA", "CipherKey", "Introduce tu contraseña maestra para abrirla.")
         Spacer(Modifier.height(28.dp))
-        PasswordField(pwd, { pwd = it; error = null }, "Contraseña maestra", imeDone = true, onDone = { if (!busy && waitSeconds == 0 && pwd.isNotEmpty()) {} })
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
-        if (waitSeconds > 0) Text("Espera $waitSeconds s para volver a intentarlo", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
-        Spacer(Modifier.height(16.dp))
-        Button(enabled = !busy && pwd.isNotEmpty() && waitSeconds == 0, modifier = Modifier.fillMaxWidth().height(52.dp), onClick = {
-            busy = true
-            scope.launch {
-                try {
-                    session.unlock(pwd.toCharArray()); pwd = ""
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                } catch (e: VaultSession.WrongPassword) {
-                    fails++; error = "Contraseña incorrecta"; haptic.performHapticFeedback(HapticFeedbackType.Reject)
-                    if (fails >= 3) waitSeconds = minOf(300, 5 shl (fails - 3))
-                } catch (e: Exception) { error = e.message ?: "No se pudo abrir la bóveda" }
-                busy = false
-            }
-        }) { if (busy) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp) else Text("Desbloquear") }
-        if (bioReady) {
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = { tryBiometric() }, Modifier.fillMaxWidth().height(52.dp)) {
-                Icon(Icons.Rounded.Fingerprint, null); Spacer(Modifier.width(8.dp)); Text("Usar huella")
-            }
+        PasswordField(pwd, { pwd = it; error = null }, "Contraseña maestra", imeDone = true, onDone = { })
+        error?.let { ErrorLine(it, Modifier.padding(top = 8.dp)) }
+        if (waitSeconds > 0) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Tag("ESPERA $waitSeconds s", k.warn, KI.Clock); Spacer(Modifier.width(8.dp)); Text("Demasiados intentos fallidos", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
         }
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            KButton("Desbloquear", busy = busy, enabled = !busy && pwd.isNotEmpty() && waitSeconds == 0, modifier = Modifier.weight(1f).heightIn(min = 56.dp), icon = KI.Lock, onClick = {
+                busy = true
+                scope.launch {
+                    try {
+                        session.unlock(pwd.toCharArray()); pwd = ""
+                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    } catch (e: VaultSession.WrongPassword) {
+                        fails++; error = "Contraseña incorrecta"; haptic.performHapticFeedback(HapticFeedbackType.Reject)
+                        if (fails >= 3) waitSeconds = minOf(300, 5 shl (fails - 3))
+                    } catch (e: Exception) { error = e.message ?: "No se pudo abrir la bóveda" }
+                    busy = false
+                }
+            })
+            if (bioReady) Box(
+                Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .clickable(role = Role.Button, onClickLabel = "Desbloquear con huella") { tryBiometric() },
+                contentAlignment = Alignment.Center,
+            ) { Icon(KI.Fingerprint, "Usar huella", Modifier.size(30.dp), tint = k.accentText) }
+        }
+    }
+}
+
+@Composable
+fun ErrorLine(text: String, modifier: Modifier = Modifier) {
+    val k = kamiTokens
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Tag("ERROR", k.error, KI.Warn); Spacer(Modifier.width(8.dp)); Text(text, color = k.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f, fill = false))
     }
 }
