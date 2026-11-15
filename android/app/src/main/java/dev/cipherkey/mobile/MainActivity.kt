@@ -45,7 +45,8 @@ class MainActivity : FragmentActivity() {
     }
 
     fun applySecureFlag() {
-        if (app.prefs.secureScreen) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        // En release `DebugHooks.captureAllowed` es siempre false (ver src/release): FLAG_SECURE solo depende del ajuste.
+        if (app.prefs.secureScreen && !DebugHooks.captureAllowed(this)) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 

@@ -49,9 +49,20 @@ ANDROID_SERIAL=<serie> ./gradlew --no-daemon :app:connectedDebugAndroidTest \
 Sin `ck.admin` se omiten las de sincronización. `AutofillAuthActivityTest` se omite si el dispositivo ya tiene una bóveda.
 Tras terminar, AGP desinstala la app: se pierden sus datos locales.
 
+## Diseño de la app Android (Ryoku Kami)
+
+Superficies planas con borde fino, Grafito (oscuro) o Washi (claro) más Sistema, un acento por tema (naranja, lima, fucsia, azul eléctrico, ámbar o tono
+personalizado) y Komiki Mono como única fuente (MIT, `assets/licenses/KomikiMono-LICENSE.txt`). Iconos propios (`ui/KIcons.kt`), avatares por dominio
+calculados en local (sin favicons por red), pantalla «Salud de la bóveda» (`security/VaultHealth.kt`), filtros de débiles/repetidas/antiguas y Proximidad
+con estados. No genera códigos TOTP: solo guarda el secreto.
+
+Capturas de pruebas (solo builds debug): `src/debug` añade un receptor que siembra una bóveda DEMO ficticia (solo si no existe ninguna), ajusta el tema y
+desactiva FLAG_SECURE; `src/release` contiene un `DebugHooks` que siempre devuelve false, así que release mantiene FLAG_SECURE según el ajuste.
+Capturas en `docs/capturas/android-*.png`.
+
 ## Pruebas
 
-- JVM (`:app:testDebugUnitTest`): emparejado de autofill, clasificador de campos, política de contraseña maestra, generador.
+- JVM (`:app:testDebugUnitTest`): emparejado de autofill, clasificador de campos, política de contraseña maestra, generador, salud de la bóveda e identidad de sitio.
 - Instrumentadas: sincronización A, B y C entre dos dispositivos simulados, pantalla de conflictos, cambio de contraseña y exportar/importar,
   envoltura de clave con el Keystore (sin autenticación), `AutofillAuthActivity`.
 - Servidor: `cargo test`.

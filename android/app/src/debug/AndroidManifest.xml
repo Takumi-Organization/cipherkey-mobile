@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- SOLO debug: siembra una bóveda DEMO (datos ficticios) y ajusta tema/captura para sacar capturas de pantalla. -->
+        <receiver android:name=".debug.DemoSeedReceiver" android:exported="true" />
+    </application>
+</manifest>
