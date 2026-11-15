@@ -29,6 +29,7 @@ private sealed interface Screen {
 fun AppRoot(session: VaultSession, onSecureChanged: () -> Unit) {
     val state by session.state.collectAsState()
     SasDialog()
+    MergeDialog()
     when (state) {
         VaultSession.State.NoVault -> OnboardingScreen(session)
         VaultSession.State.Locked -> UnlockScreen(session, autoBiometric = true)
@@ -86,6 +87,30 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
     if (showGen) GeneratorSheet(onDismiss = { showGen = false }, onUse = null)
 }
 
+
+/** Resumen de la primera fusión con otro dispositivo: hay que aceptarlo (antes se hace una copia de seguridad local). */
+@Composable
+private fun MergeDialog() {
+    val app = LocalContext.current.applicationContext as CipherKeyApp
+    val req by app.peers.merge.collectAsState()
+    val r = req ?: return
+    val x = r.summary
+    AlertDialog(
+        onDismissRequest = { r.answer.complete(false) },
+        title = { Text("Primera sincronización") },
+        text = {
+            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                Text("Con «${x.peerName()}»:")
+                Text("• ${x.mineOnly()} entradas nuevas de este dispositivo (se enviarán)")
+                Text("• ${x.theirsOnly()} entradas nuevas del otro dispositivo (se añadirán aquí)")
+                Text("• ${x.differing()} con el mismo identificador y contenido distinto (se conservan las dos versiones como conflicto)")
+                Text("Se hará una copia de seguridad de tu bóveda antes de fusionar. No se borra ni se sustituye ninguna entrada.")
+            }
+        },
+        confirmButton = { TextButton(onClick = { r.answer.complete(true) }) { Text("Fusionar") } },
+        dismissButton = { TextButton(onClick = { r.answer.complete(false) }) { Text("Cancelar") } },
+    )
+}
 
 /** Código de seguridad de la vinculación por proximidad: debe coincidir con el del otro dispositivo. */
 @Composable

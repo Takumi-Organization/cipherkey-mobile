@@ -15,20 +15,28 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 /**
- * Sincronización directa con otros dispositivos de la bóveda por la red local (ver docs/adr/0001 del proyecto de escritorio).
- * Solo funciona con la bóveda desbloqueada y la sincronización configurada: escucha, anuncia y se sincroniza mientras la
- * app está abierta. El código de seguridad lo confirma el usuario en [sas].
+ * Sincronización directa con otros dispositivos por la red local, SIN servidor (docs/adr/0002-proximidad-sin-servidor.md del
+ * proyecto de escritorio; el canal, en el 0001). Solo funciona con la bóveda desbloqueada: escucha, anuncia y se sincroniza
+ * mientras la app está abierta, tenga o no servidor configurado. El código de seguridad lo confirma el usuario en [sas] y el
+ * resumen de la primera fusión en [merge] (antes se hace una copia de seguridad local de la bóveda).
  */
 class PeerManager(private val ctx: Context, private val session: VaultSession) {
     /** Petición pendiente de que el usuario compare el código. Se responde con [CompletableFuture.complete]. */
     class SasRequest(val peer: String, val sas: String, val incoming: Boolean, val answer: CompletableFuture<Boolean>)
 
+    /** Resumen de la primera fusión con un dispositivo, pendiente de que el usuario la acepte (true) o la cancele (false). */
+    class MergeRequest(val summary: PeerSync.Summary, val answer: CompletableFuture<Boolean>)
+
     data class PeerRow(val deviceId: String, val name: String, val lastSync: Long)
-    data class NearbyRow(val address: String, val idTag: String)
+    data class NearbyRow(val address: String, val idTag: String, val linked: Boolean)
     data class Info(
         val active: Boolean = false, val port: Int = 0, val pairingOpen: Boolean = false,
         val peers: List<PeerRow> = emptyList(), val nearby: List<NearbyRow> = emptyList(), val message: String? = null,
+        val discoveryError: String? = null,
     )
+
+    private val _merge = MutableStateFlow<MergeRequest?>(null)
+    val merge: StateFlow<MergeRequest?> = _merge.asStateFlow()
 
     private val _sas = MutableStateFlow<SasRequest?>(null)
     val sas: StateFlow<SasRequest?> = _sas.asStateFlow()
@@ -58,15 +66,22 @@ class PeerManager(private val ctx: Context, private val session: VaultSession) {
                 _info.value = _info.value.copy(message = message)
             }
         }, { System.currentTimeMillis() })
+        s.setDefaultDeviceName(android.os.Build.MODEL ?: "Android")
+        s.setMergeGate(object : PeerSync.MergeGate {
+            override fun approve(summary: PeerSync.Summary): Boolean = askMerge(summary)
+            override fun backup() { session.backupVault() }
+        })
         try {
             s.start()
+            s.ensureIdentity() // identidad de proximidad dentro de la bóveda, sin servidor
         } catch (e: Exception) {
+            s.close()
             lock?.release(); lock = null
-            _info.value = Info(message = "No se pudo abrir el puerto de proximidad: ${e.message}")
+            _info.value = Info(message = "No se pudo iniciar la proximidad: ${e.message}")
             return
         }
         service = s
-        _info.value = _info.value.copy(active = true, port = s.port())
+        _info.value = _info.value.copy(active = true, port = s.port(), discoveryError = s.discoveryError())
         refresh()
     }
 
@@ -77,6 +92,8 @@ class PeerManager(private val ctx: Context, private val session: VaultSession) {
         _info.value = Info()
         _sas.value?.answer?.complete(false)
         _sas.value = null
+        _merge.value?.answer?.complete(false)
+        _merge.value = null
     }
 
     fun allowPairing() {
@@ -104,27 +121,49 @@ class PeerManager(private val ctx: Context, private val session: VaultSession) {
     /** Sincroniza con los dispositivos vinculados que se ven ahora en la red. Devuelve cuántos lo lograron. */
     suspend fun syncNearby(): Int = withContext(Dispatchers.IO) {
         val s = service ?: return@withContext 0
-        val linked = session.readDocument { d -> d.sync.peers.keys.map { id -> id to dev.cipherkey.core.sync.DeviceKey.hex(dev.cipherkey.core.p2p.Beacon.idTag(java.util.Base64.getDecoder().decode(d.syncKey), id)) } }
+        val linked = linkedTags()
         var ok = 0
         for (n in s.nearby()) {
-            if (linked.none { it.second == n.idTagHex() }) continue
+            if (n.idTagHex() !in linked) continue
             try { s.syncWith(InetSocketAddress(n.address(), n.port()), false); ok++ } catch (_: Exception) { }
         }
         ok
     }
 
     fun unlink(deviceId: String) {
-        session.withDocument { it.sync.peers.remove(deviceId) }
+        session.withDocument { it.link?.peers?.remove(deviceId) }
         refresh()
     }
+
+    /** Etiquetas de baliza de los dispositivos ya vinculados (la etiqueta sale de su clave pública fijada). */
+    private fun linkedTags(): Set<String> = try {
+        session.readDocument { d ->
+            d.link?.peers?.values?.map { dev.cipherkey.core.sync.DeviceKey.hex(dev.cipherkey.core.p2p.Beacon.idTag(it.publicKey)) }?.toSet() ?: emptySet()
+        }
+    } catch (_: Exception) { emptySet() }
 
     fun refresh() {
         val s = service ?: return
         val peers = try {
-            session.readDocument { d -> d.sync.peers.map { (id, p) -> PeerRow(id, p.name, p.lastSync) } }
+            session.readDocument { d -> d.link?.peers?.map { (id, p) -> PeerRow(id, p.name, p.lastSync) } ?: emptyList() }
         } catch (_: Exception) { emptyList() }
-        val near = s.nearby().map { NearbyRow("${it.address().hostAddress}:${it.port()}", it.idTagHex()) }
-        _info.value = _info.value.copy(active = true, port = s.port(), pairingOpen = s.pairingOpen(), peers = peers, nearby = near)
+        val linked = linkedTags()
+        val near = s.nearby().map { NearbyRow("${it.address().hostAddress}:${it.port()}", it.idTagHex(), it.idTagHex() in linked) }
+        _info.value = _info.value.copy(active = true, port = s.port(), pairingOpen = s.pairingOpen(), peers = peers, nearby = near,
+            discoveryError = s.discoveryError())
+    }
+
+    private fun askMerge(summary: PeerSync.Summary): Boolean {
+        val req = MergeRequest(summary, CompletableFuture())
+        _merge.value?.answer?.complete(false)
+        _merge.value = req
+        return try {
+            req.answer.get(120, TimeUnit.SECONDS)
+        } catch (_: Exception) {
+            false
+        } finally {
+            if (_merge.value === req) _merge.value = null
+        }
     }
 
     private fun ask(peer: String, sas: String, incoming: Boolean): Boolean {

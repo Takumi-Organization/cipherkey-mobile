@@ -63,18 +63,32 @@ A: alta de la bóveda en el servidor, emparejado de un segundo dispositivo y con
 B: ediciones concurrentes de campos distintos, fusión automática sin conflicto.
 C: ediciones concurrentes del mismo campo, conflicto con ambas versiones, resolución y convergencia.
 
-## Sincronización en proximidad (misma red)
+## Sincronización en proximidad (misma red, sin servidor)
 
-Con la sincronización configurada y la bóveda desbloqueada, la app escucha en `47890/tcp`, anuncia y descubre dispositivos por
-multidifusión UDP (`47891`) y puede sincronizar directamente con el escritorio. Ajustes > Proximidad: vincular (código de 6
-dígitos que debe coincidir en ambos), sincronizar, desvincular. Protocolo, canal seguro (X25519 + AES-GCM + firma Ed25519), SAS,
-fusión a tres bandas y límites: ver `docs/adr/0001-sincronizacion-en-proximidad.md` del repositorio de escritorio
-(`CipherKey-Rediseño`).
+Con la bóveda **desbloqueada** (con o sin servidor configurado) la app escucha en `47890/tcp`, anuncia y descubre dispositivos por
+multidifusión UDP (`47891`) y sincroniza directamente con el escritorio u otro móvil. **No hace falta ningún servidor.**
+Diseño: `docs/adr/0002-proximidad-sin-servidor.md` del repositorio de escritorio (`CipherKey-Rediseño`); canal y descubrimiento en el 0001.
 
+**Ajustes > «Proximidad (red local, sin servidor)»** (la sección del servidor queda aparte y es opcional):
+
+1. En un dispositivo pulsa **Permitir vinculación** (2 min); en el otro **Vincular** (en la lista de cercanos) o **Vincular por dirección** (`IP:puerto`).
+2. Compara el **código de 6 dígitos** en las dos pantallas y acepta en ambas.
+3. La primera vez aparece un **resumen** («X entradas nuevas de este dispositivo, Y del otro, Z con contenido distinto») que hay
+   que aceptar; antes se hace una copia de seguridad local (`vault.ckey.proximidad-<fecha>.bak`, cifrada, en el almacenamiento privado de la app).
+4. **Sincronizar con cercanos**, **Sincronizar con la dirección** y **Desvincular** (corta la sincronización con ese dispositivo).
+
+- Unión segura: la primera fusión entre dos bóvedas distintas nunca sustituye ni borra entradas; mismo identificador con contenido
+  distinto queda como conflicto (pantalla de conflictos); una lápida ajena no borra una entrada viva.
+- Si no arranca (puerto ocupado, sin red) Ajustes muestra el motivo y «Reintentar». Sin multidifusión se conecta por dirección.
 - Solo vive con la app abierta y desbloqueada; usa `MulticastLock` (permisos `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE`).
 - Android 17 (target 37) exigirá `ACCESS_LOCAL_NETWORK`; hoy target 36 y no se declara (no verificado en un dispositivo con Android 17).
-- Verificado: pruebas JVM, lint y `assembleDebug` OK; instalado en móvil físico. **No** probada la sincronización real con el
-  escritorio sobre una bóveda de prueba en el móvil.
+- **Verificado (2026-11-15):** `:core:test` (incluye `PeerSyncTest`, 23 pruebas, sobre el mismo núcleo), pruebas JVM y `assembleDebug`;
+  prueba instrumentada `ProximityNoServerTest` en emulador (dos bóvedas temporales, sin servidor: vincular con código, resumen, copia,
+  unión sin pérdida, código rechazado y desvincular); APK instalado en el móvil físico solo para comprobar que arranca (sin
+  desbloquear su bóveda).
+- **No verificado:** sincronización real móvil físico ↔ escritorio con las bóvedas reales (la hará Adrián); el descubrimiento por
+  multidifusión entre dos máquinas reales (el emulador está tras NAT; allí se vincula por dirección con `adb forward`/`10.0.2.2`);
+  Wi-Fi con aislamiento de clientes.
 
 ## Autocompletado
 

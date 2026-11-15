@@ -24,6 +24,13 @@ class VaultFiles(private val dir: File) {
         Files.move(tmp.toPath(), vault.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
     }
 
+    /** Copia de seguridad de la bóveda tal como está en disco (cifrada, misma clave maestra), p. ej. antes de fusionar con otro dispositivo. */
+    fun copyBackup(tag: String): File {
+        val copy = File(dir, "vault.ckey.$tag-${System.currentTimeMillis()}.bak")
+        Files.copy(vault.toPath(), copy.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        return copy
+    }
+
     /** Aparta una bóveda existente (p. ej. al importar otra) sin borrarla. Devuelve el fichero de la copia. */
     fun moveAside(): File? {
         if (!vault.exists()) return null

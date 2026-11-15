@@ -440,6 +440,12 @@ class VaultSession(private val appContext: Context, val files: VaultFiles = Vaul
         try { work(d) } finally { persist() }
     }
 
+    /** Guarda lo último y deja una copia de seguridad cifrada de la bóveda (se usa antes de la primera fusión por proximidad). */
+    fun backupVault(): java.io.File = locked {
+        persist()
+        files.copyBackup("proximidad")
+    }
+
     /** Solo lectura: no vuelve a cifrar ni a escribir el fichero (para refrescar listas sin desgastar el almacenamiento). */
     fun <T> readDocument(work: (VaultDocument) -> T): T = locked { work(requireDoc()) }
 

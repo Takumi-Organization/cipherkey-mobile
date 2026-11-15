@@ -94,10 +94,13 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             OutlinedButton(onClick = onGenerator, Modifier.fillMaxWidth()) { Text("Generador de contraseñas") }
         }
 
-        SectionTitle("SINCRONIZACIÓN")
+        SectionTitle("PROXIMIDAD (RED LOCAL, SIN SERVIDOR)")
+        ProximityCard(app)
+
+        SectionTitle("SINCRONIZACIÓN CON SERVIDOR (OPCIONAL)")
         FlatCard(Modifier.fillMaxWidth()) {
             if (!sync.configured) {
-                Text("Desactivada. Es opcional: tu bóveda funciona sin servidor.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Desactivada. No hace falta para sincronizar por proximidad: tu bóveda funciona sin servidor.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Button(onClick = onSyncSetup, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Configurar") }
             } else {
                 Text("${sync.deviceName} · ${sync.server}")
@@ -112,11 +115,6 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
                 }
                 TextButton(onClick = { scope.launch { session.disableSync(); msg = "Sincronización desactivada" } }) { Text("Desactivar", color = MaterialTheme.colorScheme.error) }
             }
-        }
-
-        if (sync.configured) {
-            SectionTitle("PROXIMIDAD (RED LOCAL)")
-            ProximityCard(app)
         }
 
         SectionTitle("AUTOCOMPLETADO")
@@ -271,7 +269,10 @@ private fun FlowRowButtons(vararg items: Pair<String, () -> Unit>) {
 }
 
 
-/** Sincronización directa con dispositivos vinculados en la misma red (sin pasar por el servidor). */
+/**
+ * Sincronización directa con otros dispositivos de la misma red, SIN servidor: vincular (código de 6 dígitos en ambos), lista de
+ * vinculados, desvincular y sincronizar. Disponible siempre que la bóveda esté desbloqueada.
+ */
 @Composable
 private fun ProximityCard(app: CipherKeyApp) {
     val scope = rememberCoroutineScope()
@@ -291,7 +292,10 @@ private fun ProximityCard(app: CipherKeyApp) {
     }
 
     FlatCard(Modifier.fillMaxWidth()) {
-        Text(if (info.active) "Escuchando en el puerto ${info.port}" else "Inactiva (desbloquea la bóveda)", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Sincroniza con tu escritorio u otro móvil en la misma red, sin servidor. En uno pulsa «Permitir vinculación» y en el otro «Vincular»; compara el código de 6 dígitos en las dos pantallas.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(if (info.active) "Escuchando en el puerto ${info.port} (TCP; descubrimiento por UDP 47891)" else "Inactiva", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        info.discoveryError?.let { Text("⚠ $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+        if (!info.active) TextButton(onClick = { app.peers.start() }) { Text("Reintentar") }
         if (info.pairingOpen) Text("Vinculación permitida: el otro dispositivo ya puede conectarse.", color = MaterialTheme.colorScheme.primary)
         (msg ?: info.message)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         Spacer(Modifier.height(8.dp))
@@ -310,15 +314,15 @@ private fun ProximityCard(app: CipherKeyApp) {
             Text("Cercanos en la red", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
             info.nearby.forEach { n ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(n.address, Modifier.weight(1f))
-                    TextButton(enabled = !busy, onClick = { run("Conectando…") { val r = app.peers.pairWith(n.address); "Vinculado con ${r.peerName()}" } }) { Text("Vincular") }
+                    Text(n.address + if (n.linked) "  ·  vinculado" else "", Modifier.weight(1f))
+                    if (!n.linked) TextButton(enabled = !busy, onClick = { run("Conectando… compara el código en ambos") { val r = app.peers.pairWith(n.address); "Vinculado con ${r.peerName()}: ${r.received()} recibidas, ${r.sent()} enviadas" } }) { Text("Vincular") }
                 }
             }
         }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(addr, { addr = it }, label = { Text("Dirección (IP:puerto)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         FlowRowButtons(
-            "Vincular por dirección" to { if (!busy && addr.isNotBlank()) run("Conectando… compara el código en ambos") { val r = app.peers.pairWith(addr); "Vinculado con ${r.peerName()}" } },
+            "Vincular por dirección" to { if (!busy && addr.isNotBlank()) run("Conectando… compara el código en ambos") { val r = app.peers.pairWith(addr); "Vinculado con ${r.peerName()}: ${r.received()} recibidas, ${r.sent()} enviadas" } },
             "Sincronizar con la dirección" to { if (!busy && addr.isNotBlank()) run("Sincronizando…") { val r = app.peers.syncWith(addr); "Sincronizado: ${r.received()} recibidos, ${r.sent()} enviados" } },
             "Sincronizar con cercanos" to { if (!busy) run("Sincronizando…") { val n = app.peers.syncNearby(); if (n > 0) "Sincronizado con $n dispositivo(s)" else "No hay dispositivos vinculados cerca" } },
             "Permitir vinculación (2 min)" to { app.peers.allowPairing() },

@@ -6,6 +6,7 @@ import dev.cipherkey.mobile.data.Prefs
 import dev.cipherkey.mobile.data.VaultSession
 import dev.cipherkey.mobile.data.PeerManager
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class CipherKeyApp : Application() {
@@ -29,9 +30,9 @@ class CipherKeyApp : Application() {
         prefs = Prefs(this)
         biometric = BiometricVault(session.files.bio)
         peers = PeerManager(this, session)
-        // La proximidad solo está activa con la bóveda desbloqueada y la sincronización configurada
+        // La proximidad solo está activa con la bóveda desbloqueada; NO necesita servidor de sincronización
         appScope.launch {
-            kotlinx.coroutines.flow.combine(session.state, session.sync) { st, sy -> st == VaultSession.State.Unlocked && sy.configured }
+            session.state.map { it == VaultSession.State.Unlocked }
                 .distinctUntilChanged().collect { on -> if (on) peers.start() else peers.stop() }
         }
     }
