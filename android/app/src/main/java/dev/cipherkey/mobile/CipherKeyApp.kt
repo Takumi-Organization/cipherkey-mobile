@@ -28,6 +28,7 @@ class CipherKeyApp : Application() {
         super.onCreate()
         session = VaultSession(this)
         prefs = Prefs(this)
+        dev.cipherkey.mobile.ui.ThemeState.load(prefs)
         biometric = BiometricVault(session.files.bio)
         peers = PeerManager(this, session)
         // La proximidad solo está activa con la bóveda desbloqueada; NO necesita servidor de sincronización

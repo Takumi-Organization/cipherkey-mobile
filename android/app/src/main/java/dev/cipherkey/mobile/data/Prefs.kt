@@ -24,4 +24,19 @@ class Prefs(ctx: Context) {
     var clipboardClearSeconds: Int
         get() = sp.getInt("clipClear", 30)
         set(v) = sp.edit().putInt("clipClear", v).apply()
+
+    /** Apariencia (no secreta): 0 sistema, 1 Grafito (oscuro), 2 Washi (claro). */
+    var themeMode: Int
+        get() = sp.getInt("themeMode", 1)
+        set(v) = sp.edit().putInt("themeMode", v).apply()
+
+    /** Acento: índice de la lista predefinida, o -1 para el tono personalizado. */
+    var accentIndex: Int
+        get() = sp.getInt("accentIndex", 0)
+        set(v) = sp.edit().putInt("accentIndex", v).apply()
+
+    /** Tono (0..360) del acento personalizado. */
+    var accentHue: Float
+        get() = sp.getFloat("accentHue", 150f)
+        set(v) = sp.edit().putFloat("accentHue", v).apply()
 }

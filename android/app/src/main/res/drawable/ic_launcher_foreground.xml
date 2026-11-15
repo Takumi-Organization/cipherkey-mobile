@@ -1,7 +1,8 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF"
-        android:pathData="M54,24 L78,32 L78,52 C78,67 68,78 54,84 C40,78 30,67 30,52 L30,32 Z" />
-    <path android:fillColor="#1B8AC9"
-        android:pathData="M54,40 a7,7 0 1,1 0,14 a7,7 0 1,1 0,-14 Z M51.5,52 L56.5,52 L57.5,68 L50.5,68 Z" />
+    <!-- Cámara acorazada plana: relleno naranja desplazado y trazo de tinta encima (Ryoku Kami). -->
+    <path android:fillColor="#FF6A1F" android:pathData="M44,44h34v34h-34z" />
+    <path android:strokeColor="#ECE4D8" android:strokeWidth="3.5" android:pathData="M34,34h34v34h-34z" />
+    <path android:fillColor="#ECE4D8"
+        android:pathData="M51,44 a5,5 0 1,1 0,10 a5,5 0 1,1 0,-10 Z M49.5,52 h3 l1,9 h-5 z" />
 </vector>
