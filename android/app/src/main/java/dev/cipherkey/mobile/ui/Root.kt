@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,11 +58,12 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
     BackHandler(enabled = stack.size > 1) { pop() }
 
     when (val s = current) {
-        is Screen.Tabs -> Scaffold(
-            containerColor = kamiTokens.paper,
-            bottomBar = { KNavBar(s.tab) { setTab(it) } },
-        ) { pad ->
-            Box(Modifier.padding(pad).consumeWindowInsets(pad).systemBarsPadding()) {
+        is Screen.Tabs -> Box(Modifier.fillMaxSize().background(kamiTokens.paper)) {
+            val glassBackdrop = rememberGlassBackdrop()
+            val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            // La barra de pestañas flota sobre el contenido (hermana, no hija, de la fuente de cristal).
+            Box(Modifier.fillMaxSize().glassSource(glassBackdrop).statusBarsPadding()) {
+              CompositionLocalProvider(LocalBottomInset provides TabBarHeight + navBottom) {
                 when (s.tab) {
                     0 -> DashboardTab(session, onOpen = { push(Screen.Detail(it)) },
                         onSync = { if (session.sync.value.configured) scope.launch { try { session.syncNow() } catch (_: Exception) {} } else push(Screen.SyncSetup) },
@@ -70,6 +72,10 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
                     else -> SettingsTab(session, onSecureChanged, onSyncSetup = { push(Screen.SyncSetup) }, onConflicts = { push(Screen.Conflicts) },
                         onImport = { push(Screen.Import) }, onGenerator = { showGen = true })
                 }
+              }
+            }
+            CompositionLocalProvider(LocalGlassBackdrop provides glassBackdrop) {
+                Box(Modifier.align(Alignment.BottomCenter)) { KNavBar(s.tab) { setTab(it) } }
             }
         }
         is Screen.Detail -> Box(Modifier.systemBarsPadding()) {
@@ -80,7 +86,7 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
         }
         Screen.Conflicts -> Box(Modifier.systemBarsPadding()) { ConflictsScreen(session, onBack = { pop() }) }
         Screen.Import -> Column(Modifier.systemBarsPadding().padding(24.dp).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-            Text("02 // DATOS", style = MaterialTheme.typography.labelMedium, color = kamiTokens.accentText)
+            Text("DATOS", style = MaterialTheme.typography.labelMedium, color = kamiTokens.accentText)
             Text("Importar bóveda", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(12.dp))
             ImportPanel(session, onBack = { pop() }, replacing = true, onDone = { pop() })
@@ -91,24 +97,24 @@ private fun Unlocked(session: VaultSession, onSecureChanged: () -> Unit) {
 }
 
 
-/** Barra inferior plana: línea superior, marca de acento sobre la pestaña activa y zonas de 64 dp. */
+/** Barra inferior flotante de cristal: la pestaña activa lleva una pastilla de acento y cada zona mide 64 dp. */
 @Composable
 private fun KNavBar(selected: Int, onSelect: (Int) -> Unit) {
     val k = kamiTokens
-    Column(Modifier.background(k.paper).navigationBarsPadding()) {
-        HorizontalDivider(color = k.line2)
-        Row(Modifier.fillMaxWidth().height(64.dp)) {
-            listOf(Triple("Panel", KI.Shield, 0), Triple("Bóveda", KI.Key, 1), Triple("Ajustes", KI.Settings, 2)).forEach { (label, icon, i) ->
-                val on = selected == i
-                Column(
-                    Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onSelect(i) }.semantics { this.selected = on; contentDescription = label },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(Modifier.fillMaxWidth().height(3.dp).background(if (on) k.accent else androidx.compose.ui.graphics.Color.Transparent))
-                    Spacer(Modifier.height(9.dp))
-                    Icon(icon, null, Modifier.size(24.dp), tint = if (on) k.accentText else k.inkMuted)
-                    Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = if (on) k.accentText else k.inkMuted, modifier = Modifier.padding(top = 3.dp))
-                }
+    Row(
+        Modifier.navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp).fillMaxWidth().height(64.dp)
+            .glass(RoundedCornerShape(20.dp)).padding(5.dp),
+    ) {
+        listOf(Triple("Panel", KI.Shield, 0), Triple("Bóveda", KI.Key, 1), Triple("Ajustes", KI.Settings, 2)).forEach { (label, icon, i) ->
+            val on = selected == i
+            Column(
+                Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp))
+                    .background(if (on) k.accent.copy(alpha = if (k.dark) 0.16f else 0.11f) else androidx.compose.ui.graphics.Color.Transparent)
+                    .clickable(role = Role.Tab) { onSelect(i) }.semantics { this.selected = on; contentDescription = label },
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(icon, null, Modifier.size(24.dp), tint = if (on) k.accentText else k.inkMuted)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = if (on) k.accentText else k.inkMuted, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }
@@ -117,7 +123,7 @@ private fun KNavBar(selected: Int, onSelect: (Int) -> Unit) {
 @Composable
 private fun StatBlock(value: Int, label: String, tone: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     val k = kamiTokens
-    Column(modifier.border(1.dp, if (value > 0) tone else k.line2, RoundedCornerShape(4.dp)).padding(12.dp)) {
+    Column(modifier.border(1.dp, if (value > 0) tone else k.line2, RoundedCornerShape(10.dp)).padding(12.dp)) {
         Text("$value", style = MaterialTheme.typography.headlineMedium, color = if (value > 0) tone else k.inkMuted)
         Text(label, style = MaterialTheme.typography.labelSmall, color = k.inkMuted)
     }
@@ -165,7 +171,7 @@ private fun SasDialog() {
                 Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Código de seguridad: " + r.sas.toList().joinToString(" ") }, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     r.sas.forEachIndexed { i, c ->
                         if (i == 3) Spacer(Modifier.width(12.dp))
-                        Box(Modifier.padding(horizontal = 2.dp).size(width = 38.dp, height = 56.dp).border(1.5.dp, k.accent, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.padding(horizontal = 2.dp).size(width = 38.dp, height = 56.dp).border(1.5.dp, k.accent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                             Text("$c", fontSize = 30.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = k.accentText)
                         }
                     }

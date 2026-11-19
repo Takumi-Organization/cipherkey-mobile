@@ -108,7 +108,7 @@ private fun IssueRow(title: String, detail: String, count: Int, tone: Color, onC
         Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = !clean, role = Role.Button, onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(36.dp).border(1.dp, if (clean) k.ok else tone, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp).border(1.dp, if (clean) k.ok else tone, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             if (clean) Icon(KI.Check, "Sin problemas", Modifier.size(18.dp), tint = k.ok)
             else Text("$count", style = MaterialTheme.typography.labelLarge, color = tone)
         }
@@ -143,8 +143,8 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
         ).joinToString(" · ")
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-        ScreenTitle("00 // PANEL", "Salud de la bóveda")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp + LocalBottomInset.current)) {
+        ScreenTitle("PANEL", "Salud de la bóveda")
         Column(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             ScoreGauge(report.score, report.level)
             Spacer(Modifier.height(8.dp))
@@ -158,7 +158,7 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
             Text(summary, Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodyMedium, color = k.inkDim, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
 
-        Row(Modifier.fillMaxWidth().padding(top = 20.dp).border(1.dp, k.line2, RoundedCornerShape(4.dp)).height(IntrinsicSize.Min)) {
+        Row(Modifier.fillMaxWidth().padding(top = 20.dp).border(1.dp, k.line2, RoundedCornerShape(10.dp)).height(IntrinsicSize.Min)) {
             StatCell("${records.size}", "ENTRADAS", Modifier.weight(1f))
             Box(Modifier.width(1.dp).fillMaxHeight().background(k.line2))
             StatCell("$favorites", "FAVORITAS", Modifier.weight(1f))
@@ -168,7 +168,7 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
 
         AnimatedVisibility(sync.conflicts > 0, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
             Row(
-                Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(4.dp)).clickable(role = Role.Button) { onConflicts() }.padding(14.dp),
+                Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(10.dp)).clickable(role = Role.Button) { onConflicts() }.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(KI.Warn, null, tint = k.error)
@@ -181,16 +181,16 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
             }
         }
 
-        SectionLabel("01 // FORTALEZA")
+        SectionLabel("FORTALEZA")
         val names = PasswordGenerator.Strength.entries
         names.indices.reversed().forEach { i -> StrengthRow(names[i].label, report.byStrength[i], report.total, strengthColor(names[i])) }
 
-        SectionLabel("02 // A REVISAR")
+        SectionLabel("A REVISAR")
         IssueRow("Contraseñas débiles", "Fáciles de adivinar: cámbialas por una generada", report.weak.size, k.error) { onFilter("weak") }
         IssueRow("Contraseñas repetidas", "${report.repeatedGroups} grupo(s) comparten la misma clave", report.repeated.size, k.warn) { onFilter("rep") }
         IssueRow("Sin cambiar en un año", "Conviene renovarlas", report.old.size, k.warn) { onFilter("old") }
 
-        SectionLabel("03 // SINCRONIZACIÓN")
+        SectionLabel("SINCRONIZACIÓN")
         KCard(Modifier.fillMaxWidth().clickable(role = Role.Button) { onSync() }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val ok = sync.configured && sync.error == null
@@ -214,7 +214,7 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
             }
         }
 
-        SectionLabel("04 // ÚLTIMAS MODIFICACIONES")
+        SectionLabel("ÚLTIMAS MODIFICACIONES")
         if (recent.isEmpty()) Text("Aún no hay contraseñas. Añade la primera desde la pestaña Bóveda.", color = k.inkMuted)
         recent.forEach { RecordRow(it, onClick = { onOpen(it.uuid) }, health = report) }
     }
@@ -261,7 +261,7 @@ fun RecordRow(r: Record, onClick: () -> Unit, health: VaultHealth.Report? = null
 private fun VaultFab(onClick: () -> Unit) {
     val k = kamiTokens
     Row(
-        Modifier.heightIn(min = 56.dp).clip(RoundedCornerShape(4.dp)).background(k.accent).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 18.dp),
+        Modifier.heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp)).background(k.accent).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(KI.Plus, null, tint = k.onAccent); Spacer(Modifier.width(8.dp))
@@ -309,9 +309,9 @@ fun VaultTab(session: VaultSession, onOpen: (String) -> Unit, onAdd: () -> Unit,
             }
         }
     }
-    Scaffold(containerColor = k.paper, floatingActionButton = { VaultFab(onAdd) }) { pad ->
+    Scaffold(containerColor = k.paper, floatingActionButton = { Box(Modifier.padding(bottom = LocalBottomInset.current)) { VaultFab(onAdd) } }) { pad ->
         Column(Modifier.padding(pad).padding(horizontal = 16.dp)) {
-            ScreenTitle("01 // BÓVEDA", "${records.size} contraseñas") { KIconButton(KI.Spark, "Generador de contraseñas", onGenerator) }
+            ScreenTitle("BÓVEDA", "${records.size} contraseñas") { KIconButton(KI.Spark, "Generador de contraseñas", onGenerator) }
             KField(query, { query = it }, "Buscar", placeholder = "Nombre, usuario, sitio, etiqueta…", leading = { Icon(KI.Search, null, Modifier.size(20.dp)) },
                 trailing = if (query.isNotEmpty()) ({ KIconButton(KI.Close, "Borrar búsqueda", { query = "" }) }) else null)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -329,7 +329,7 @@ fun VaultTab(session: VaultSession, onOpen: (String) -> Unit, onAdd: () -> Unit,
                         if (records.isEmpty()) {
                             VaultEmblem(96, open = true)
                             Spacer(Modifier.height(20.dp))
-                            Text("00 // BÓVEDA VACÍA", style = MaterialTheme.typography.labelMedium, color = k.accentText)
+                            Text("BÓVEDA VACÍA", style = MaterialTheme.typography.labelMedium, color = k.accentText)
                             Text("Aquí vivirán tus contraseñas", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 6.dp))
                             Text("Cifradas en este dispositivo. Empieza con la primera.", style = MaterialTheme.typography.bodySmall, color = k.inkMuted, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             KButton("Añadir la primera", onAdd, icon = KI.Plus)
@@ -341,7 +341,7 @@ fun VaultTab(session: VaultSession, onOpen: (String) -> Unit, onAdd: () -> Unit,
                     }
                 }
             } else {
-                LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
+                LazyColumn(contentPadding = PaddingValues(bottom = 88.dp + LocalBottomInset.current)) {
                     items(rows, key = { if (it is Record) it.uuid else "h:$it" }) { row ->
                         if (row is Record) Box(Modifier.animateItem()) { RecordRow(row, onClick = { onOpen(row.uuid) }, health = report) }
                         else Text(row as String, Modifier.padding(top = 14.dp, bottom = 2.dp), style = MaterialTheme.typography.labelMedium, color = k.accentText)

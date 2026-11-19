@@ -76,7 +76,7 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).imePadding().padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             error?.let { Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Tag("ERROR", k.error, KI.Warn); Spacer(Modifier.width(8.dp)); Text(it, color = k.error, style = MaterialTheme.typography.bodySmall) } }
-            SectionLabel("01 // IDENTIDAD", Modifier.padding(top = 8.dp))
+            SectionLabel("IDENTIDAD", Modifier.padding(top = 8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SiteAvatar(title.ifBlank { "?" }, url, 48)
                 Spacer(Modifier.width(14.dp))
@@ -84,7 +84,7 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
             }
             KField(title, { title = it; error = null }, "Servicio *", isError = error != null && title.isBlank())
             KField(username, { username = it }, "Usuario o correo")
-            SectionLabel("02 // SECRETO", Modifier.padding(top = 8.dp))
+            SectionLabel("SECRETO", Modifier.padding(top = 8.dp))
             KField(password, { password = it }, "Contraseña", mono = true,
                 visualTransformation = if (showPwd) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -94,7 +94,7 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
                 } })
             StrengthBar(password)
             KField(totp, { totp = it }, "Secreto 2FA (opcional)", mono = true)
-            SectionLabel("03 // ORGANIZACIÓN", Modifier.padding(top = 8.dp))
+            SectionLabel("ORGANIZACIÓN", Modifier.padding(top = 8.dp))
             KField(url, { url = it }, "Sitio web o app", keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 supporting = "Web: https://ejemplo.com. App Android: androidapp://<paquete>, p. ej. androidapp://com.example.app (así el autocompletado la reconoce).")
             KField(category, { category = it }, "Categoría")
@@ -103,7 +103,7 @@ fun EditorScreen(session: VaultSession, uuid: String?, onClose: () -> Unit, onDe
             KField(tags, { tags = it }, "Etiquetas (separadas por comas)")
             KField(notes, { notes = it }, "Notas", singleLine = false, minLines = 3)
 
-            SectionLabel("04 // CAMPOS PERSONALIZADOS", Modifier.padding(top = 8.dp))
+            SectionLabel("CAMPOS PERSONALIZADOS", Modifier.padding(top = 8.dp))
             custom.forEachIndexed { i, c ->
                 KCard(Modifier.fillMaxWidth()) {
                     KField(c.name, { custom[i] = Record.Custom(it, c.value, c.secret) }, "Nombre")
@@ -144,7 +144,7 @@ fun GeneratorSheet(onDismiss: () -> Unit, onUse: ((String) -> Unit)?) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = k.raised, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
         dragHandle = { Box(Modifier.padding(top = 12.dp).size(width = 36.dp, height = 3.dp).background(k.line3)) }) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("05 // GENERADOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)
+            Text("GENERADOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)
             Text("Contraseña nueva", style = MaterialTheme.typography.titleLarge)
             KCard(Modifier.fillMaxWidth(), container = k.paper) {
                 if (out.isEmpty()) Text("Elige al menos un tipo de carácter", color = k.inkMuted)

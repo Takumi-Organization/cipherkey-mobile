@@ -32,7 +32,7 @@ class Prefs(ctx: Context) {
 
     /** Acento: índice de la lista predefinida, o -1 para el tono personalizado. */
     var accentIndex: Int
-        get() = sp.getInt("accentIndex", 0)
+        get() = sp.getInt("accentIndex", 4)
         set(v) = sp.edit().putInt("accentIndex", v).apply()
 
     /** Tono (0..360) del acento personalizado. */

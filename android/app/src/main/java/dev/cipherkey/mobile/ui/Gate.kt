@@ -74,7 +74,7 @@ fun OnboardingScreen(session: VaultSession) {
     var error by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize().dotGrid(kamiTokens.line1).verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding(), verticalArrangement = Arrangement.Center) {
-        Hero("00 // BIENVENIDA", "CipherKey", "Tus contraseñas, cifradas en este dispositivo.")
+        Hero("BIENVENIDA", "CipherKey", "Tus contraseñas, cifradas en este dispositivo.")
         Spacer(Modifier.height(32.dp))
         AnimatedContent(mode, label = "onboarding") { m ->
             when (m) {
@@ -191,7 +191,7 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
     val pulse = if (bioReady && !reduced) rememberInfiniteTransition(label = "pulse").animateFloat(0.55f, 1f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "a").value else 1f
     val k = kamiTokens
     Column(Modifier.fillMaxSize().dotGrid(k.line1).verticalScroll(rememberScrollState()).padding(24.dp).systemBarsPadding().imePadding(), verticalArrangement = Arrangement.Center) {
-        Hero("00 // BÓVEDA BLOQUEADA", "CipherKey", "Introduce tu contraseña maestra para abrirla.")
+        Hero("BÓVEDA BLOQUEADA", "CipherKey", "Introduce tu contraseña maestra para abrirla.")
         Spacer(Modifier.height(28.dp))
         PasswordField(pwd, { pwd = it; error = null }, "Contraseña maestra", imeDone = true, onDone = { })
         error?.let { ErrorLine(it, Modifier.padding(top = 8.dp)) }
@@ -214,7 +214,7 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
                 }
             })
             if (bioReady) Box(
-                Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
                     .clickable(role = Role.Button, onClickLabel = "Desbloquear con huella") { tryBiometric() },
                 contentAlignment = Alignment.Center,
             ) { Icon(KI.Fingerprint, "Usar huella", Modifier.size(30.dp), tint = k.accentText) }

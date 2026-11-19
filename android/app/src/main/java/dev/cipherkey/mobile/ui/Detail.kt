@@ -72,7 +72,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
 
     Scaffold(
         containerColor = k.paper,
-        snackbarHost = { SnackbarHost(snack) { d -> Snackbar(d, shape = RoundedCornerShape(4.dp), containerColor = k.ink, contentColor = k.paper) } },
+        snackbarHost = { SnackbarHost(snack) { d -> Snackbar(d, shape = RoundedCornerShape(10.dp), containerColor = k.ink, contentColor = k.paper) } },
         topBar = {
             KTopBar("Detalle", onBack) {
                 KIconButton(if (r.favorite) KI.StarFilled else KI.Star, if (r.favorite) "Quitar de favoritas" else "Marcar como favorita",
@@ -83,7 +83,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 32.dp)) {
             if (r.conflict != null) {
-                Row(Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(4.dp)).clickable(role = Role.Button) { onConflict() }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(10.dp)).clickable(role = Role.Button) { onConflict() }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(KI.Warn, null, tint = k.error); Spacer(Modifier.width(12.dp))
                     Text("Conflicto de sincronización: toca para resolver", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 }
@@ -106,7 +106,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
                 }
             }
 
-            SectionLabel("01 // ACCESO")
+            SectionLabel("ACCESO")
             KCard(Modifier.fillMaxWidth(), padding = 14) {
                 FieldRow("Usuario", r.username, copied = copiedKey == "Usuario", onCopy = { copy("Usuario", it) })
                 HorizontalDivider(color = k.line1)
@@ -119,26 +119,26 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
                 })
             }
             if (r.tags.isNotEmpty()) {
-                SectionLabel("02 // ETIQUETAS")
+                SectionLabel("ETIQUETAS")
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { r.tags.forEach { Tag("#$it", k.inkDim) } }
             }
-            if (r.notes.isNotBlank()) { SectionLabel("03 // NOTAS"); KCard(Modifier.fillMaxWidth()) { Text(r.notes, style = MaterialTheme.typography.bodyMedium) } }
+            if (r.notes.isNotBlank()) { SectionLabel("NOTAS"); KCard(Modifier.fillMaxWidth()) { Text(r.notes, style = MaterialTheme.typography.bodyMedium) } }
             if (r.custom.isNotEmpty()) {
-                SectionLabel("04 // CAMPOS PERSONALIZADOS")
+                SectionLabel("CAMPOS PERSONALIZADOS")
                 KCard(Modifier.fillMaxWidth(), padding = 14) { r.custom.forEachIndexed { i, c ->
                     if (i > 0) HorizontalDivider(color = k.line1)
                     FieldRow(c.name, c.value, secret = c.secret, copied = copiedKey == c.name, onCopy = { copy(c.name, it) })
                 } }
             }
             if (r.totpSecret.isNotBlank()) {
-                SectionLabel("05 // VERIFICACIÓN EN DOS PASOS")
+                SectionLabel("VERIFICACIÓN EN DOS PASOS")
                 KCard(Modifier.fillMaxWidth(), padding = 14) {
                     FieldRow("Secreto 2FA", r.totpSecret, secret = true, mono = true, copied = copiedKey == "Secreto 2FA", onCopy = { copy("Secreto 2FA", it) })
                     Text("CipherKey guarda el secreto; todavía no genera los códigos de 6 dígitos.", style = MaterialTheme.typography.bodySmall, color = k.inkMuted, modifier = Modifier.padding(bottom = 8.dp))
                 }
             }
             if (r.history.isNotEmpty()) {
-                SectionLabel("06 // HISTORIAL")
+                SectionLabel("HISTORIAL")
                 KButton(if (showHistory) "Ocultar ${r.history.size} contraseña(s) anteriores" else "Ver ${r.history.size} contraseña(s) anteriores", { showHistory = !showHistory }, Modifier.fillMaxWidth(), kind = KKind.Secondary, icon = KI.Clock)
                 AnimatedVisibility(showHistory) {
                     KCard(Modifier.fillMaxWidth().padding(top = 8.dp), padding = 14) { r.history.forEachIndexed { i, h ->
@@ -147,7 +147,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
                     } }
                 }
             }
-            SectionLabel("07 // INFORMACIÓN")
+            SectionLabel("INFORMACIÓN")
             Text("MODIFICADA  ${formatDate(r.updatedAt)}", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
             Text("CREADA      ${formatDate(r.created)}", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
         }

@@ -32,8 +32,8 @@ import kotlinx.coroutines.launch
 private fun ThemeSection() {
     val k = kamiTokens
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        KChip("Grafito", ThemeState.mode == 1, { ThemeState.updateMode(1) })
-        KChip("Washi", ThemeState.mode == 2, { ThemeState.updateMode(2) })
+        KChip("Oscuro", ThemeState.mode == 1, { ThemeState.updateMode(1) })
+        KChip("Claro", ThemeState.mode == 2, { ThemeState.updateMode(2) })
         KChip("Sistema", ThemeState.mode == 0, { ThemeState.updateMode(0) })
     }
     Text("ACENTO", style = MaterialTheme.typography.labelMedium, color = k.inkMuted, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
@@ -43,7 +43,7 @@ private fun ThemeSection() {
             val fill = kami(k.dark, color).accent
             val on = kami(k.dark, color).onAccent
             Box(
-                Modifier.size(48.dp).background(fill, RoundedCornerShape(4.dp)).border(if (selected) 3.dp else 1.dp, if (selected) k.ink else k.line2, RoundedCornerShape(4.dp))
+                Modifier.size(48.dp).background(fill, RoundedCornerShape(10.dp)).border(if (selected) 3.dp else 1.dp, if (selected) k.ink else k.line2, RoundedCornerShape(10.dp))
                     .clickable(role = Role.RadioButton, onClickLabel = "Elegir acento $name", onClick = onClick)
                     .semantics { contentDescription = "Acento $name" + if (selected) ", seleccionado" else "" },
                 contentAlignment = Alignment.Center,
@@ -88,14 +88,14 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-        ScreenTitle("02 // AJUSTES", "Ajustes")
-        msg?.let { Row(Modifier.fillMaxWidth().border(1.dp, k.accent, RoundedCornerShape(4.dp)).padding(12.dp)) { Text("> $it", style = MaterialTheme.typography.bodySmall.merge(Mono), color = k.accentText) } }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp + LocalBottomInset.current)) {
+        ScreenTitle("AJUSTES", "Ajustes")
+        msg?.let { Row(Modifier.fillMaxWidth().border(1.dp, k.accent, RoundedCornerShape(10.dp)).padding(12.dp)) { Text("> $it", style = MaterialTheme.typography.bodySmall.merge(Mono), color = k.accentText) } }
 
-        SectionLabel("00 // APARIENCIA", Modifier.padding(top = 16.dp))
+        SectionLabel("APARIENCIA", Modifier.padding(top = 16.dp))
         KCard(Modifier.fillMaxWidth()) { ThemeSection() }
 
-        SectionLabel("01 // SEGURIDAD")
+        SectionLabel("SEGURIDAD")
         KCard(Modifier.fillMaxWidth()) {
             Text("BLOQUEO POR INACTIVIDAD", style = MaterialTheme.typography.labelMedium, color = k.inkMuted)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -120,7 +120,7 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             KButton("Bloquear ahora", { session.lock() }, Modifier.fillMaxWidth(), icon = KI.Lock)
         }
 
-        SectionLabel("02 // DATOS")
+        SectionLabel("DATOS")
         KCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 KButton("Cambiar contraseña maestra", { showChange = true }, Modifier.fillMaxWidth(), kind = KKind.Secondary, icon = KI.Key)
@@ -130,10 +130,10 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }
         }
 
-        SectionLabel("03 // PROXIMIDAD (RED LOCAL, SIN SERVIDOR)")
+        SectionLabel("PROXIMIDAD (RED LOCAL, SIN SERVIDOR)")
         ProximityCard(app)
 
-        SectionLabel("04 // SINCRONIZACIÓN CON SERVIDOR (OPCIONAL)")
+        SectionLabel("SINCRONIZACIÓN CON SERVIDOR (OPCIONAL)")
         KCard(Modifier.fillMaxWidth()) {
             if (!sync.configured) {
                 Row(verticalAlignment = Alignment.CenterVertically) { Tag("DESACTIVADA", k.inkMuted); }
@@ -153,7 +153,7 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }
         }
 
-        SectionLabel("05 // AUTOCOMPLETADO")
+        SectionLabel("AUTOCOMPLETADO")
         KCard(Modifier.fillMaxWidth()) {
             Text("Elige CipherKey como servicio de autocompletado para rellenar usuario y contraseña en otras apps y webs.", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
             KButton("Activar autocompletado", {
@@ -162,8 +162,8 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }, Modifier.fillMaxWidth().padding(top = 12.dp), kind = KKind.Secondary, icon = KI.Shield)
         }
 
-        SectionLabel("06 // ACERCA DE")
-        Text("CipherKey Android · tipografía Komiki Mono (licencia MIT, incluida en la app).", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
+        SectionLabel("ACERCA DE")
+        Text("CipherKey Android · tipografía Inter y JetBrains Mono (licencia OFL, incluida en la app).", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
     }
     pairCode?.let { code ->
         AlertDialog(onDismissRequest = { pairCode = null }, title = { Text("Código de emparejamiento") },
@@ -238,7 +238,7 @@ fun SyncSetupScreen(session: VaultSession, onBack: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     Scaffold(containerColor = k.paper, topBar = { KTopBar("Sincronización", onBack) }) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("04 // SERVIDOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)
+            Text("SERVIDOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 KChip("Servidor propio", mode == "new", { mode = "new" })
                 KChip("Emparejar con código", mode == "pair", { mode = "pair" })
@@ -330,7 +330,7 @@ private fun ProximityCard(app: CipherKeyApp) {
 
     KCard(Modifier.fillMaxWidth(), border = if (info.pairingOpen) k.accent else k.line2) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).border(1.dp, if (info.active) k.accent else k.line2, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp).border(1.dp, if (info.active) k.accent else k.line2, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
                 Icon(KI.Radar, null, tint = if (info.active) k.accentText else k.inkFaint)
             }
             Spacer(Modifier.width(14.dp))

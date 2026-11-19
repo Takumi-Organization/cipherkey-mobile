@@ -15,14 +15,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import dev.cipherkey.mobile.R
 import dev.cipherkey.mobile.data.Prefs
 
 /**
- * Identidad «Ryoku Kami»: superficies planas, bordes finos, Grafito (oscuro) o Washi (claro), un solo acento saturado y
- * Komiki Mono. Sin degradados, sin sombras, sin colores dinámicos del sistema.
+ * Identidad «Ryoku Glass» (2026-11-19): neutros fríos, filetes finos, un solo acento saturado, Inter para la interfaz y
+ * JetBrains Mono solo para datos (contraseñas, códigos). Sin degradados, sin sombras, sin colores dinámicos del sistema;
+ * el cristal (`Glass.kt`) solo en la barra de pestañas flotante, nunca sobre pantallas con secretos a la vista.
  */
 @Immutable
 class Kami(
@@ -45,12 +47,13 @@ val kamiTokens: Kami @Composable get() = LocalKami.current
 data class AccentPreset(val name: String, val color: Color)
 
 object Accents {
+    /** El ORDEN se conserva (la preferencia guarda el índice): 0 Bermellón (antes Naranja), 1 Lima, 2 Fucsia, 3 Egeo (Azul eléctrico), 4 Oro (Ámbar). */
     val PRESETS = listOf(
-        AccentPreset("Naranja", Color(0xFFFF6A1F)),
-        AccentPreset("Lima", Color(0xFFB4E61D)),
-        AccentPreset("Fucsia", Color(0xFFFF2E93)),
-        AccentPreset("Azul eléctrico", Color(0xFF2F6BFF)),
-        AccentPreset("Ámbar", Color(0xFFFFB300)),
+        AccentPreset("Bermellón", Color(0xFFFF5A4A)),
+        AccentPreset("Lima", Color(0xFFB6E04A)),
+        AccentPreset("Fucsia", Color(0xFFFF6FB1)),
+        AccentPreset("Egeo", Color(0xFF62B6E8)),
+        AccentPreset("Oro", Color(0xFFF2B33D)),
     )
 
     /** Color del acento personalizado a partir de un tono HSV: saturado y luminoso. */
@@ -76,39 +79,39 @@ fun ensureContrast(c: Color, bg: Color, target: Float, toward: Color): Color {
     return out
 }
 
-private val GRAFITO_INK = Color(0xFFECE4D8)
-private val WASHI_INK = Color(0xFF26211C)
+private val NIGHT_INK = Color(0xFFECEFF4)
+private val DAY_INK = Color(0xFF14171C)
 
 fun kami(dark: Boolean, accentBase: Color): Kami {
-    val paper = if (dark) Color(0xFF211D1A) else Color(0xFFF3ECE0)
-    val ink = if (dark) GRAFITO_INK else WASHI_INK
-    // relleno: en Washi se oscurece lo justo para que el bloque se distinga del papel (3:1, gráficos)
-    val fill = if (dark) accentBase else ensureContrast(accentBase, paper, 3f, Color.Black)
+    val paper = if (dark) Color(0xFF0F1115) else Color(0xFFF4F5F7)
+    val ink = if (dark) NIGHT_INK else DAY_INK
+    // relleno: en claro se oscurece lo justo para llegar a 4,5:1 contra el papel (lleva texto blanco encima)
+    val fill = if (dark) accentBase else ensureContrast(accentBase, paper, 4.5f, Color.Black)
     val onFill = if (contrast(Color(0xFF14110F), fill) >= contrast(Color.White, fill)) Color(0xFF14110F) else Color.White
     val text = if (dark) ensureContrast(accentBase, paper, 4.5f, Color.White) else ensureContrast(accentBase, paper, 4.5f, Color.Black)
     return Kami(
         dark = dark, paper = paper,
-        raised = if (dark) Color(0xFF2A2521) else Color(0xFFFAF5EC),
-        high = if (dark) Color(0xFF352F2A) else Color(0xFFE9E0D1),
+        raised = if (dark) Color(0xFF171A20) else Color(0xFFFFFFFF),
+        high = if (dark) Color(0xFF232830) else Color(0xFFE9ECF0),
         ink = ink,
-        inkDim = if (dark) Color(0xFFC9C0B3) else Color(0xFF4A423A),
-        inkMuted = if (dark) Color(0xFFA69D90) else Color(0xFF675D52),
-        inkFaint = if (dark) Color(0xFF8F867A) else Color(0xFF8A8074),
-        line1 = ink.copy(alpha = 0.16f), line2 = ink.copy(alpha = 0.30f), line3 = ink.copy(alpha = 0.48f),
+        inkDim = if (dark) Color(0xFFB4BBC7) else Color(0xFF4A515C),
+        inkMuted = if (dark) Color(0xFF8E97A6) else Color(0xFF5F6773),
+        inkFaint = if (dark) Color(0xFF5F6877) else Color(0xFF9AA2AE),
+        line1 = ink.copy(alpha = 0.10f), line2 = ink.copy(alpha = 0.16f), line3 = ink.copy(alpha = 0.30f),
         accent = fill, onAccent = onFill, accentText = text,
-        secondary = if (dark) Color(0xFF8FBDD1) else Color(0xFF2B6A86),
-        error = if (dark) Color(0xFFF27A70) else Color(0xFFB3261E),
+        secondary = if (dark) Color(0xFF7FC4EC) else Color(0xFF0B6B99),
+        error = if (dark) Color(0xFFFF7A70) else Color(0xFFB3261E),
         warn = if (dark) Color(0xFFF0B25E) else Color(0xFF8A5A00),
-        ok = if (dark) Color(0xFF7FD0AE) else Color(0xFF1F6F4D),
+        ok = if (dark) Color(0xFF6FD3A6) else Color(0xFF1B6B49),
     )
 }
 
 // ------------------------------------------------------------------ preferencias de apariencia reactivas
 
-/** Estado de apariencia que lee `CipherKeyTheme`; se persiste en `Prefs`. Sin cargar (pruebas), usa Grafito + naranja. */
+/** Estado de apariencia que lee `CipherKeyTheme`; se persiste en `Prefs`. Sin cargar (pruebas), usa oscuro + Bermellón. */
 object ThemeState {
-    var mode by mutableIntStateOf(1)          // 0 sistema, 1 Grafito, 2 Washi
-    var accentIndex by mutableIntStateOf(0)   // -1 = personalizado
+    var mode by mutableIntStateOf(1)          // 0 sistema, 1 oscuro, 2 claro
+    var accentIndex by mutableIntStateOf(4)   // -1 = personalizado
     var hue by mutableFloatStateOf(150f)
     private var prefs: Prefs? = null
 
@@ -119,19 +122,18 @@ object ThemeState {
     fun accentColor(): Color = if (accentIndex in Accents.PRESETS.indices) Accents.PRESETS[accentIndex].color else Accents.custom(hue)
 }
 
-// ------------------------------------------------------------------ tipografía: Komiki Mono (MIT), única fuente
+// ------------------------------------------------------------------ tipografía: Inter (interfaz) y JetBrains Mono (datos), ambas OFL
 
-val KomikiMono = FontFamily(
-    Font(R.font.komikimono_regular, FontWeight.Normal),
-    Font(R.font.komikimono_bold, FontWeight.Bold),
-    Font(R.font.komikimono_bold, FontWeight.SemiBold),
-    Font(R.font.komikimono_bold, FontWeight.Medium),
+val InterFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal), Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold), Font(R.font.inter_bold, FontWeight.Bold),
 )
+val DataMono = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), Font(R.font.jetbrains_mono_semibold, FontWeight.Bold), Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold))
 
-// «calt 0»: la fuente deriva de Fira Code y fusionaría secuencias como «->» o «==»; en una contraseña eso engaña.
+// Cifras tabulares; «calt 0» solo importa en la fuente de datos (JetBrains Mono fusiona «->» o «==» y en una contraseña eso engaña).
 private fun t(size: Int, line: Int, bold: Boolean = false, spacing: Float = 0f) = TextStyle(
-    fontFamily = KomikiMono, fontSize = size.sp, lineHeight = line.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-    letterSpacing = spacing.sp, fontFeatureSettings = "calt 0, liga 0",
+    fontFamily = InterFamily, fontSize = size.sp, lineHeight = line.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal,
+    letterSpacing = spacing.sp, fontFeatureSettings = "tnum",
 )
 
 private val KamiTypography = Typography(
@@ -139,15 +141,15 @@ private val KamiTypography = Typography(
     headlineLarge = t(28, 36, true), headlineMedium = t(28, 36, true), headlineSmall = t(20, 28, true),
     titleLarge = t(20, 28, true), titleMedium = t(16, 24, true), titleSmall = t(14, 20, true),
     bodyLarge = t(15, 22), bodyMedium = t(14, 22), bodySmall = t(12, 18),
-    labelLarge = t(13, 18, true, 0.3f), labelMedium = t(11, 16, true, 0.9f), labelSmall = t(11, 16, true, 0.9f),
+    labelLarge = t(14, 18, true), labelMedium = t(12, 16, true, 0.3f), labelSmall = t(11, 16, true, 0.2f),
 )
 
-/** Estilo para datos (contraseñas, códigos): la misma Komiki Mono, sin ligaduras. */
-val Mono = t(14, 22)
+/** Estilo para datos (contraseñas, códigos): JetBrains Mono, sin ligaduras. */
+val Mono = TextStyle(fontFamily = DataMono, fontSize = 14.sp, lineHeight = 22.sp, fontFeatureSettings = "calt 0, liga 0")
 
 private val KamiShapes = Shapes(
-    extraSmall = RoundedCornerShape(4), small = RoundedCornerShape(4), medium = RoundedCornerShape(4),
-    large = RoundedCornerShape(4), extraLarge = RoundedCornerShape(4),
+    extraSmall = RoundedCornerShape(6.dp), small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp), extraLarge = RoundedCornerShape(20.dp),
 )
 
 private fun scheme(k: Kami): ColorScheme {

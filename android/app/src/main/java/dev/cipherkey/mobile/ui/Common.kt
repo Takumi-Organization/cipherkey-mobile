@@ -46,7 +46,7 @@ import dev.cipherkey.mobile.security.PasswordGenerator
 import java.text.DateFormat
 import java.util.Date
 
-private val Square = RoundedCornerShape(4.dp)
+private val Square = RoundedCornerShape(10.dp)
 
 /** Superficie plana con borde fino: sin sombras ni degradados; la jerarquía sale del tono y la línea. */
 @Composable

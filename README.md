@@ -128,3 +128,12 @@ Bugs que salieron de esa verificación y están corregidos: indicador de sync qu
 - Sin guardado de credenciales nuevas desde el autocompletado (`onSaveRequest` no hace nada).
 - La lista de sufijos públicos del emparejador es mínima, no la Public Suffix List completa.
 - Chrome no usa servicios de terceros por defecto; la prueba de autofill en navegador real no se ha hecho.
+
+## Identidad visual: Ryoku Glass (2026-11-19)
+Rediseño sobre la identidad común de Adrián (vault: `Estilo visual Ryoku Glass`), que sustituye a Ryoku Kami: neutros fríos (`#0F1115` / `#171A20` / `#232830`; claro `#F4F5F7`), filetes de 1 dp, radios 6-20, **Inter** para la interfaz y **JetBrains Mono solo para datos** (contraseñas, códigos; sin ligaduras, para que `->` o `==` no se fundan en una contraseña). Komiki Mono y su licencia se retiran; Inter y JetBrains Mono (OFL) van en `assets/licenses/`. Se quitan los prefijos `NN // ` de las etiquetas.
+
+Acentos: la preferencia guarda el **índice**, así que se conserva el orden y cambian color y nombre: 0 Bermellón (antes Naranja), 1 Lima, 2 Fucsia, 3 Egeo (Azul eléctrico), 4 Oro (Ámbar); **Oro** por defecto en instalaciones nuevas. El tono personalizado se mantiene. Los nombres de tema pasan a «Oscuro» / «Claro» / «Sistema».
+
+**Cristal solo en la barra de pestañas** (`ui/Glass.kt`, desenfoque real con `GraphicsLayer` + `BlurEffect`, opaca en API < 31 / minSdk 26), que ahora flota sobre las pestañas Panel, Bóveda y Ajustes. **Detalle, editor, desbloqueo, generador y diálogos NO llevan cristal**: ahí pueden estar contraseñas a la vista. Las pestañas solo muestran nombres, usuarios y estadísticas, nunca secretos, y `FLAG_SECURE` sigue igual. La capa grabada se rellena con el fondo opaco antes del desenfoque; sin eso el contenido nítido de debajo se transparentaba por el velo.
+
+Capturas: `docs/capturas/glass-*.png` (emulador, bóveda DEMO ficticia). Sin verificar: móvil físico, fluidez del desenfoque, la pantalla de desbloqueo y el generador tras el cambio, y el contraste del texto sobre cristal con script. Tests: unitarios y lint en verde; instrumentados: 5 pasan y 7 se omiten por precondiciones (servidor `ck.admin`/`ck.pair`, o hay una bóveda en el dispositivo).
