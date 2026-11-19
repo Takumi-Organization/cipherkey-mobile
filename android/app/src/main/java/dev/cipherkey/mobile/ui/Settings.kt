@@ -105,17 +105,23 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
             }
             KSwitchRow("Bloquear al salir de la app", lockOnLeave, { lockOnLeave = it; app.prefs.lockOnLeave = it })
             KSwitchRow("Ocultar contenido en capturas y recientes", secure, { secure = it; app.prefs.secureScreen = it; onSecureChanged() })
-            if (Biometrics.available(activity)) KSwitchRow("Desbloqueo con huella", bio, { on ->
-                if (!on) { app.biometric.disable(); bio = false; msg = "Huella desactivada" }
+            if (Biometrics.available(activity)) KSwitchRow("Desbloqueo con huella o rostro", bio, { on ->
+                if (!on) { app.biometric.disable(); bio = false; msg = "Biometría desactivada" }
                 else try {
                     val c = app.biometric.encryptCipher()
-                    Biometrics.prompt(activity, "Activar huella", "Confirma para guardar la clave", c, { cipher ->
+                    Biometrics.prompt(activity, "Activar biometría", "Confirma con tu huella o rostro para guardar la clave", c, { cipher ->
                         val key = session.vaultKeyCopy()
-                        try { app.biometric.finishEnable(cipher, key); bio = true; msg = "Huella activada" } catch (e: Exception) { app.biometric.disable(); msg = "No se pudo activar la huella" }
+                        try { app.biometric.finishEnable(cipher, key); bio = true; msg = "Biometría activada" } catch (e: Exception) { app.biometric.disable(); msg = "No se pudo activar la biometría" }
                         finally { key.fill(0) }
                     }, { err -> app.biometric.disable(); bio = false; if (err.isNotBlank()) msg = err })
-                } catch (e: Exception) { app.biometric.disable(); msg = "No se pudo preparar la huella" }
+                } catch (e: Exception) { app.biometric.disable(); msg = "No se pudo preparar la biometría" }
             })
+            if (Biometrics.available(activity) || Biometrics.faceHardware(activity)) Text(
+                if (!Biometrics.available(activity)) "Este móvil tiene desbloqueo facial, pero Android lo clasifica como «de conveniencia» y no permite usarlo para proteger las claves de la bóveda. Usa la contraseña maestra, o una huella si tu móvil la tiene y está registrada."
+                else if (Biometrics.faceHardware(activity)) "Se usa la huella o el rostro que tu móvil admita como biometría FUERTE. Si el desbloqueo facial de tu móvil no se ofrece aquí, es porque Android lo clasifica como «de conveniencia» y no permite usarlo para proteger claves."
+                else "Se usa la huella o el rostro que tu móvil admita como biometría fuerte.",
+                style = MaterialTheme.typography.bodySmall, color = k.inkMuted, modifier = Modifier.padding(bottom = 4.dp),
+            )
             Spacer(Modifier.height(8.dp))
             KButton("Bloquear ahora", { session.lock() }, Modifier.fillMaxWidth(), icon = KI.Lock)
         }
@@ -191,9 +197,9 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
     }
     if (showChange) ChangePasswordDialog(session, onDismiss = { showChange = false }, onDone = {
         showChange = false
-        // la clave cambió: lo guardado para la huella ya no sirve
+        // la clave cambió: lo guardado para la biometría ya no sirve
         app.biometric.disable(); bio = false
-        msg = "Contraseña cambiada. Vuelve a activar la huella si la usabas."
+        msg = "Contraseña cambiada. Vuelve a activar la biometría si la usabas."
     })
 }
 

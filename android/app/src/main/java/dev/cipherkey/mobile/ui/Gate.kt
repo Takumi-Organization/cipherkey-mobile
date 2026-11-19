@@ -159,7 +159,7 @@ fun ImportPanel(session: VaultSession, onBack: () -> Unit, replacing: Boolean, o
     }
 }
 
-/** Pantalla de bloqueo: contraseña maestra o huella. Tras varios fallos se impone una espera creciente. */
+/** Pantalla de bloqueo: contraseña maestra o biometría fuerte (huella o rostro). Tras varios fallos se impone una espera creciente. */
 @Composable
 fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
     val ctx = LocalContext.current
@@ -177,11 +177,11 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
     LaunchedEffect(waitSeconds) { if (waitSeconds > 0) { delay(1000); waitSeconds-- } }
 
     fun tryBiometric() {
-        val c = try { app.biometric.decryptCipher() } catch (e: Exception) { null } ?: run { error = "La huella ya no es válida: usa la contraseña"; return }
-        Biometrics.prompt(activity, "Desbloquear CipherKey", "Confirma con tu huella", c, { cipher ->
+        val c = try { app.biometric.decryptCipher() } catch (e: Exception) { null } ?: run { error = "La biometría ya no es válida (¿cambiaste tu huella o rostro?): usa la contraseña"; return }
+        Biometrics.prompt(activity, "Desbloquear CipherKey", "Confirma con tu huella o rostro", c, { cipher ->
             scope.launch {
                 try { session.unlockWithKey(app.biometric.finishUnlock(cipher)); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }
-                catch (e: Exception) { error = "No se pudo desbloquear con huella: usa la contraseña" }
+                catch (e: Exception) { error = "No se pudo desbloquear con biometría: usa la contraseña" }
             }
         }, { msg -> if (msg.isNotBlank()) error = null })
     }
@@ -215,9 +215,9 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
             })
             if (bioReady) Box(
                 Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
-                    .clickable(role = Role.Button, onClickLabel = "Desbloquear con huella") { tryBiometric() },
+                    .clickable(role = Role.Button, onClickLabel = "Desbloquear con huella o rostro") { tryBiometric() },
                 contentAlignment = Alignment.Center,
-            ) { Icon(KI.Fingerprint, "Usar huella", Modifier.size(30.dp), tint = k.accentText) }
+            ) { Icon(KI.Fingerprint, "Usar huella o rostro", Modifier.size(30.dp), tint = k.accentText) }
         }
     }
 }

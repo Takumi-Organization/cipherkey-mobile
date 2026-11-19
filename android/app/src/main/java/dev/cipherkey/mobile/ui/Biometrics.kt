@@ -7,10 +7,13 @@ import androidx.fragment.app.FragmentActivity
 import javax.crypto.Cipher
 
 object Biometrics {
+    /** El móvil declara hardware de reconocimiento facial (no implica que Android lo clasifique como biometría fuerte). */
+    fun faceHardware(a: FragmentActivity): Boolean = a.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_FACE)
+
     fun available(a: FragmentActivity): Boolean =
         BiometricManager.from(a).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
 
-    /** BiometricPrompt ligado a un Cipher del Keystore: sin huella válida el Keystore no usa la clave. */
+    /** BiometricPrompt ligado a un Cipher del Keystore: sin una biometría fuerte válida (huella o rostro, según el móvil) el Keystore no usa la clave. */
     fun prompt(a: FragmentActivity, title: String, subtitle: String, cipher: Cipher, onSuccess: (Cipher) -> Unit, onFail: (String) -> Unit) {
         val cb = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
