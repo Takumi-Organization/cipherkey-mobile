@@ -9,14 +9,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-sourceSets {
-    main { java.srcDir("src/main/java") }
-    test {
-        java.srcDir("src/test/java")
-        resources.srcDir("src/test/resources")
-    }
-}
-
 dependencies {
     api(libs.bouncycastle)
     api(libs.gson)
