@@ -105,4 +105,4 @@ Sigue la identidad visual de Takumi-Organization: negro y tinta clara, monocromo
 
 ## Licencia
 
-[MIT](LICENSE), © 2026 Takumi-Organization. Las fuentes Outfit y JetBrains Mono se distribuyen bajo SIL OFL 1.1. Dependencias de la app: AndroidX y Compose (Apache 2.0); del servidor: axum, tokio, rusqlite y ed25519-dalek (licencias permisivas MIT, Apache 2.0 o BSD; las dependencias transitivas no se han auditado una a una). El módulo `core` compartido del cliente de escritorio no forma parte de este repositorio y tiene su propia licencia.
+[MIT](LICENSE), © 2026 Takumi-Organization. Las fuentes Outfit y JetBrains Mono se distribuyen bajo SIL OFL 1.1. Dependencias de la app: AndroidX y Compose (Apache 2.0); del servidor: axum, tokio, rusqlite y ed25519-dalek (licencias permisivas MIT, Apache 2.0 o BSD; las dependencias transitivas no se han auditado una a una). El módulo `:core` es una copia del cliente de escritorio de CipherKey (licencia MIT, mismo autor; usa BouncyCastle y Gson).
