@@ -4,7 +4,7 @@ Resumen en el [README](../README.md).
 
 Cliente Android del gestor de contraseñas CipherKey y servidor de sincronización cifrada de extremo a extremo.
 El formato de bóveda, la criptografía, la fusión y el protocolo de sync viven en el módulo compartido
-`../CipherKey-Rediseño/CipherKey/core` (Java 17), que Android compila como fuente (`ck.core.dir` en `android/gradle.properties`).
+`android/core` (Java 17), copia de las fuentes del módulo compartido con el escritorio (véase `android/core/README.md`).
 
 ```
 android/   app Kotlin + Jetpack Compose (módulos :app y :core)
@@ -63,7 +63,7 @@ Capturas de pruebas (solo builds debug): `src/debug` añade un receptor que siem
 - Instrumentadas: sincronización A, B y C entre dos dispositivos simulados, pantalla de conflictos, cambio de contraseña y exportar/importar,
   envoltura de clave con el Keystore (sin autenticación), `AutofillAuthActivity`.
 - Servidor: `cargo test`.
-- Escritorio (referencia, sin modificar): `mvn test` en `../CipherKey-Rediseño/CipherKey` da 61 pruebas correctas.
+- Escritorio (referencia): `mvn test` en el cliente de escritorio daba 61 pruebas correctas.
 
 ## Escenarios de sincronización (definidos aquí)
 
@@ -75,7 +75,7 @@ C: ediciones concurrentes del mismo campo, conflicto con ambas versiones, resolu
 
 Con la bóveda **desbloqueada** (con o sin servidor configurado) la app escucha en `47890/tcp`, anuncia y descubre dispositivos por
 multidifusión UDP (`47891`) y sincroniza directamente con el escritorio u otro móvil. **No hace falta ningún servidor.**
-Diseño: `docs/adr/0002-proximidad-sin-servidor.md` del repositorio de escritorio (`CipherKey-Rediseño`); canal y descubrimiento en el 0001.
+Diseño: `docs/adr/0002-proximidad-sin-servidor.md` del repositorio del cliente de escritorio; canal y descubrimiento en el 0001.
 
 **Ajustes > «Proximidad (red local, sin servidor)»** (la sección del servidor queda aparte y es opcional):
 
