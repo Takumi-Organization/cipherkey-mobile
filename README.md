@@ -1,139 +1,108 @@
 # CipherKey Mobile
 
-Cliente Android del gestor de contraseñas CipherKey y servidor de sincronización cifrada de extremo a extremo.
-El formato de bóveda, la criptografía, la fusión y el protocolo de sync viven en el módulo compartido
-`../CipherKey-Rediseño/CipherKey/core` (Java 17), que Android compila como fuente (`ck.core.dir` en `android/gradle.properties`).
+Cliente Android del gestor de contraseñas CipherKey (Kotlin, Jetpack Compose) y servidor de sincronización cifrada de extremo a extremo (Rust, axum + SQLite).
+
+| Bienvenida | Desbloqueo | Panel | Bóveda |
+|---|---|---|---|
+| ![Bienvenida](docs/capturas/01-bienvenida.png) | ![Desbloqueo](docs/capturas/02-desbloqueo.png) | ![Panel](docs/capturas/03-panel.png) | ![Bóveda](docs/capturas/04-boveda.png) |
+
+| Detalle | Generador | Ajustes | Nueva entrada |
+|---|---|---|---|
+| ![Detalle](docs/capturas/05-detalle.png) | ![Generador](docs/capturas/06-generador.png) | ![Ajustes](docs/capturas/07-ajustes.png) | ![Nueva](docs/capturas/08-nueva.png) |
+
+Capturas reales (`adb screencap`) en un emulador Pixel_API36 (Android 16) con una **bóveda de demostración ficticia** (nombres, correos y contraseñas inventados) que la build de depuración siembra para este fin. Se tomaron con el APK **debug** y con la protección de pantalla desactivada solo en ese emulador; el APK de la release mantiene `FLAG_SECURE` según el ajuste.
 
 ```
 android/   app Kotlin + Jetpack Compose (módulos :app y :core)
-server/    servidor Rust (axum + SQLite): guarda solo registros cifrados, firmas Ed25519, anti-repetición, revocación
+server/    servidor Rust: guarda solo registros cifrados, firmas Ed25519, anti-repetición, revocación
+docs/      licencias de las fuentes y capturas
 ```
 
-## Estado (2026-11-14)
+## Características
 
-Funciona y está probado:
-- Bóveda: crear, importar `.ckey` v2/v3, editar, favoritos, generador, cambiar contraseña maestra, exportar copia cifrada.
-- Bloqueo por inactividad y al salir de la app, `FLAG_SECURE` configurable, desbloqueo con maestra.
-- Sincronización con servidor propio (alta, emparejado por código, conflictos y su resolución, WorkManager).
-- Autocompletado: servicio con autenticación a nivel de Dataset, emparejado estricto por dominio o `androidapp://<paquete>`.
+- **Bóveda**: crear, importar `.ckey` v2/v3, editar, favoritos, generador de contraseñas, cambiar la contraseña maestra y exportar una copia cifrada. Pantalla «Salud de la bóveda» con débiles, repetidas y antiguas. No genera códigos TOTP: solo guarda el secreto.
+- **Bloqueo** por inactividad y al salir de la app, `FLAG_SECURE` configurable y desbloqueo con la contraseña maestra o con huella (biometría fuerte).
+- **Sincronización** con un servidor propio (alta, emparejado por código, conflictos y su resolución, WorkManager) y **sincronización en proximidad** por la red local, sin servidor (con la bóveda desbloqueada: vinculación con código de 6 dígitos, resumen previo y copia de seguridad cifrada).
+- **Autocompletado**: servicio con autenticación a nivel de Dataset y emparejado estricto por dominio o por `androidapp://<paquete>`.
 
-Ver "Pruebas" para qué está verificado y dónde. Lo que depende de huella real se indica en la sección de pendientes.
+### Modelo de seguridad (lo que documenta el repositorio)
 
-## Compilar y probar
+- El servidor solo guarda **registros cifrados** (extremo a extremo), con firmas Ed25519, protección anti-repetición y revocación de dispositivos.
+- El formato de bóveda, la criptografía, la fusión y el protocolo de sincronización están en un módulo compartido con el cliente de escritorio (véase «Compilar»); la clave de la bóveda se envuelve con el Keystore de Android y una prueba instrumentada lo cubre.
+- La primera fusión entre dos bóvedas distintas nunca sustituye ni borra entradas; el mismo identificador con contenido distinto queda como conflicto.
+- Detalle y límites en [docs/NOTAS-TECNICAS.md](docs/NOTAS-TECNICAS.md). Este README no añade afirmaciones de seguridad nuevas ni hay una auditoría externa.
 
-Android (siempre un solo Gradle a la vez en esta máquina):
+## Instalación
+
+Descarga `cipherkey-mobile-0.1.0.apk` de la [última release](../../releases/latest) y comprueba el `sha256` publicado junto a él:
+
+```
+sha256sum -c cipherkey-mobile-0.1.0.apk.sha256
+adb install -r cipherkey-mobile-0.1.0.apk
+```
+
+> **Aviso:** el APK está **firmado con la clave de depuración** de Android (el módulo `app` no define firma de release; el APK `release` compilado se firmó con `apksigner` y esa clave). Es una versión de prueba: no es una firma de producción, no pasa por Play Store ni Play Protect y Android puede avisar al instalarlo. No guardes en ella contraseñas que no puedas perder. Requiere Android 8.0 (API 26) o superior.
+
+## Permisos
+
+| Permiso | Para qué |
+|---|---|
+| `INTERNET` | Sincronizar con el servidor propio que configures |
+| `USE_BIOMETRIC` | Desbloqueo con huella |
+| `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE` | Descubrimiento de dispositivos en la red local (multidifusión) para la sincronización en proximidad |
+
+## Compilar desde el código
+
+Requisitos: JDK 17 o superior (el proyecto compila a Java 17; verificado con JDK 27), Android SDK con la plataforma 37 (`compileSdk 37`, `targetSdk 36`, `minSdk 26`) y el Gradle wrapper incluido (en `android/`).
+
+> **Importante:** el formato, la criptografía, la fusión y la sincronización viven en el módulo `core` del cliente de escritorio de CipherKey, que Android compila como fuente. La ruta se configura con `ck.core.dir` en `android/gradle.properties` (por defecto `../../CipherKey-Rediseño/CipherKey/core`) y **ese módulo no está en este repositorio**. Sin él, la app no compila; hay que dejarlo en esa ruta o apuntar `ck.core.dir` a una copia.
 
 ```
 cd android
-./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx1g :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+./gradlew --no-daemon :app:assembleDebug
+./gradlew --no-daemon :app:assembleRelease     # sale sin firmar (app-release-unsigned.apk)
 ```
 
-Servidor:
+Para firmar el release con la clave de depuración, como hace la release publicada:
+
+```
+apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android \
+  --ks-key-alias androiddebugkey --out cipherkey-mobile-0.1.0.apk \
+  app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+Servidor (no es necesario para usar la app en local ni la sincronización en proximidad):
 
 ```
 cd server
-cargo test                       # 9 pruebas de integración (tests/api.rs); sin pruebas unitarias propias
 CK_ADMIN_TOKEN=<token> CK_BIND=127.0.0.1:8787 cargo run --release
 ```
 
-Variables del servidor: `CK_BIND`, `CK_DB`, `CK_ADMIN_TOKEN`, `CK_OPEN_REGISTRATION`, `CK_TRUST_PROXY`, `CK_TOMBSTONE_DAYS`, `CK_RATE_PER_MIN`.
-Pon HTTPS delante con un proxy inverso. La app en debug permite HTTP solo hacia `10.0.2.2` (emulador).
-
-Pruebas instrumentadas (dispositivo o emulador conectado; con servidor local arrancado):
-
-```
-ANDROID_SERIAL=<serie> ./gradlew --no-daemon :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.ck.admin=<token>
-```
-
-Sin `ck.admin` se omiten las de sincronización. `AutofillAuthActivityTest` se omite si el dispositivo ya tiene una bóveda.
-Tras terminar, AGP desinstala la app: se pierden sus datos locales.
-
-## Diseño de la app Android (Ryoku Kami)
-
-Superficies planas con borde fino, Grafito (oscuro) o Washi (claro) más Sistema, un acento por tema (naranja, lima, fucsia, azul eléctrico, ámbar o tono
-personalizado) y Komiki Mono como única fuente (MIT, `assets/licenses/KomikiMono-LICENSE.txt`). Iconos propios (`ui/KIcons.kt`), avatares por dominio
-calculados en local (sin favicons por red), pantalla «Salud de la bóveda» (`security/VaultHealth.kt`), filtros de débiles/repetidas/antiguas y Proximidad
-con estados. No genera códigos TOTP: solo guarda el secreto.
-
-Capturas de pruebas (solo builds debug): `src/debug` añade un receptor que siembra una bóveda DEMO ficticia (solo si no existe ninguna), ajusta el tema y
-desactiva FLAG_SECURE; `src/release` contiene un `DebugHooks` que siempre devuelve false, así que release mantiene FLAG_SECURE según el ajuste.
-Capturas en `docs/capturas/android-*.png`.
+Variables: `CK_BIND`, `CK_DB`, `CK_ADMIN_TOKEN`, `CK_OPEN_REGISTRATION`, `CK_TRUST_PROXY`, `CK_TOMBSTONE_DAYS`, `CK_RATE_PER_MIN`. Pon HTTPS delante con un proxy inverso; la build de depuración permite HTTP solo hacia `10.0.2.2` (emulador).
 
 ## Pruebas
 
-- JVM (`:app:testDebugUnitTest`): emparejado de autofill, clasificador de campos, política de contraseña maestra, generador, salud de la bóveda e identidad de sitio.
-- Instrumentadas: sincronización A, B y C entre dos dispositivos simulados, pantalla de conflictos, cambio de contraseña y exportar/importar,
-  envoltura de clave con el Keystore (sin autenticación), `AutofillAuthActivity`.
-- Servidor: `cargo test`.
-- Escritorio (referencia, sin modificar): `mvn test` en `../CipherKey-Rediseño/CipherKey` da 61 pruebas correctas.
+```
+cd android
+./gradlew --no-daemon :core:test :app:testDebugUnitTest :app:lintDebug
+ANDROID_SERIAL=<serie> ./gradlew --no-daemon :app:connectedDebugAndroidTest   # con emulador; las de sincronización necesitan un servidor local y -Pandroid.testInstrumentationRunnerArguments.ck.admin=<token>
+cd ../server && cargo test        # 9 pruebas de integración
+```
 
-## Escenarios de sincronización (definidos aquí)
+AGP desinstala la app al terminar las instrumentadas, así que se pierden sus datos locales. Estas pruebas no se han vuelto a ejecutar al preparar esta publicación; sí se compiló el release y se comprobó que instala y arranca sin errores en el emulador. Los resultados anteriores y los escenarios de sincronización están en [docs/NOTAS-TECNICAS.md](docs/NOTAS-TECNICAS.md).
 
-A: alta de la bóveda en el servidor, emparejado de un segundo dispositivo y convergencia (incluye borrado).
-B: ediciones concurrentes de campos distintos, fusión automática sin conflicto.
-C: ediciones concurrentes del mismo campo, conflicto con ambas versiones, resolución y convergencia.
+## Identidad visual
 
-## Sincronización en proximidad (misma red, sin servidor)
+Sigue la identidad visual de Takumi-Organization: negro y tinta clara, monocromo estricto (error, aviso y correcto se leen por icono y texto; los avatares de sitio son grises estables por dominio), esquinas rectas con corte diagonal arriba a la derecha, selección por inversión y sin cristal ni desenfoque. Tipografías **Outfit** y **JetBrains Mono**, bajo licencia SIL OFL 1.1: [Outfit](docs/licencias/OFL-Outfit.txt) y [JetBrains Mono](docs/licencias/OFL-JetBrainsMono.txt).
 
-Con la bóveda **desbloqueada** (con o sin servidor configurado) la app escucha en `47890/tcp`, anuncia y descubre dispositivos por
-multidifusión UDP (`47891`) y sincroniza directamente con el escritorio u otro móvil. **No hace falta ningún servidor.**
-Diseño: `docs/adr/0002-proximidad-sin-servidor.md` del repositorio de escritorio (`CipherKey-Rediseño`); canal y descubrimiento en el 0001.
+## Estado y límites conocidos
 
-**Ajustes > «Proximidad (red local, sin servidor)»** (la sección del servidor queda aparte y es opcional):
+- Sin verificar: sincronización real móvil físico a escritorio con bóvedas reales, descubrimiento por multidifusión entre dos máquinas reales, Wi-Fi con aislamiento de clientes, y la prueba de autofill en un navegador real (Chrome no usa servicios de terceros por defecto).
+- Android 17 (target 37) exigirá `ACCESS_LOCAL_NETWORK`; hoy el target es 36 y no se declara (no verificado en un dispositivo con Android 17).
+- Cambiar el servidor de sincronización exige desactivar y volver a activar; importar una bóveda descarta la identidad de sincronización (la anterior queda como `.bak`).
+- Sin guardado de credenciales nuevas desde el autocompletado; la lista de sufijos públicos del emparejador es mínima.
+- La biometría facial que Android clasifica como «de conveniencia» no se usa para desbloquear: solo la biometría fuerte.
 
-1. En un dispositivo pulsa **Permitir vinculación** (2 min); en el otro **Vincular** (en la lista de cercanos) o **Vincular por dirección** (`IP:puerto`).
-2. Compara el **código de 6 dígitos** en las dos pantallas y acepta en ambas.
-3. La primera vez aparece un **resumen** («X entradas nuevas de este dispositivo, Y del otro, Z con contenido distinto») que hay
-   que aceptar; antes se hace una copia de seguridad local (`vault.ckey.proximidad-<fecha>.bak`, cifrada, en el almacenamiento privado de la app).
-4. **Sincronizar con cercanos**, **Sincronizar con la dirección** y **Desvincular** (corta la sincronización con ese dispositivo).
+## Licencia
 
-- Unión segura: la primera fusión entre dos bóvedas distintas nunca sustituye ni borra entradas; mismo identificador con contenido
-  distinto queda como conflicto (pantalla de conflictos); una lápida ajena no borra una entrada viva.
-- Si no arranca (puerto ocupado, sin red) Ajustes muestra el motivo y «Reintentar». Sin multidifusión se conecta por dirección.
-- Solo vive con la app abierta y desbloqueada; usa `MulticastLock` (permisos `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE`).
-- Android 17 (target 37) exigirá `ACCESS_LOCAL_NETWORK`; hoy target 36 y no se declara (no verificado en un dispositivo con Android 17).
-- **Verificado (2026-11-15):** `:core:test` (incluye `PeerSyncTest`, 23 pruebas, sobre el mismo núcleo), pruebas JVM y `assembleDebug`;
-  prueba instrumentada `ProximityNoServerTest` en emulador (dos bóvedas temporales, sin servidor: vincular con código, resumen, copia,
-  unión sin pérdida, código rechazado y desvincular); APK instalado en el móvil físico solo para comprobar que arranca (sin
-  desbloquear su bóveda).
-- **No verificado:** sincronización real móvil físico ↔ escritorio con las bóvedas reales (la hará Adrián); el descubrimiento por
-  multidifusión entre dos máquinas reales (el emulador está tras NAT; allí se vincula por dirección con `adb forward`/`10.0.2.2`);
-  Wi-Fi con aislamiento de clientes.
-
-## Autocompletado
-
-Activar en Ajustes de la app (o Ajustes del sistema > Autocompletado). El servicio siempre responde con una autenticación:
-se desbloquea (maestra o huella) y se rellena el registro elegido. Solo se ofrecen registros que encajan:
-- Web: dominio igual o padre en frontera de etiqueta; no se aceptan sufijos públicos ni una sola etiqueta como dominio padre;
-  una página http no recibe credenciales guardadas como https.
-- App: la URL del registro debe ser `androidapp://<paquete>` exacto.
-Chrome no usa servicios de terceros por defecto; sí lo hacen las apps y las WebView (en `localhost` o https).
-
-## Verificación en emulador (API 36, 2026-11-14)
-
-Hecho en pantalla: crear bóveda, editar, ajustes, huella (activar con `BiometricPrompt`, desbloquear con ella y usarla en el autofill),
-autofill con app y WebView de prueba (relleno, sin coincidencia, dominio parecido, rebaja https a http), sincronización desde la UI
-(indicador "Todo sincronizado"), emparejado con código mostrado en pantalla y segundo dispositivo simulado con
-`SecondDeviceTest` (`am instrument -e ck.pair <código>`), lista de dispositivos y revocación, exportar e importar `.ckey` con el selector del sistema.
-La huella se enrola en el emulador con PIN + `BIOMETRIC_ENROLL` + `adb emu finger touch 1`.
-
-Bugs que salieron de esa verificación y están corregidos: indicador de sync que no se apagaba, y cierre de la app al abrir el selector de archivos
-(`biometric` arrastraba `fragment` 1.2.5: se fija 1.8.9 en `libs.versions.toml`).
-
-## Límites conocidos
-
-- Cambiar el servidor de sincronización exige desactivar y volver a activar.
-- Importar una bóveda descarta la identidad de sincronización (queda como bóveda local; la anterior se aparta como `.bak`).
-- Sin guardado de credenciales nuevas desde el autocompletado (`onSaveRequest` no hace nada).
-- La lista de sufijos públicos del emparejador es mínima, no la Public Suffix List completa.
-- Chrome no usa servicios de terceros por defecto; la prueba de autofill en navegador real no se ha hecho.
-
-## Identidad visual: Takumi (2026-11-22)
-Sustituye a Ryoku Glass. Negro `#000` y tinta `#F2F2F2` (claro «papel» `#F4F4F4`), monocromo estricto, esquinas rectas con corte diagonal arriba a la derecha, Outfit + JetBrains Mono (licencias en `docs/licencias/`), seleccionado por inversión, sin cristal ni desenfoque. Error, aviso y correcto se leen por icono y texto, no por color; los avatares de sitio son grises estables por dominio. El selector de acento se retiró (la preferencia guardada se conserva sin efecto).
-
-Acentos: la preferencia guarda el **índice**, así que se conserva el orden y cambian color y nombre: 0 Bermellón (antes Naranja), 1 Lima, 2 Fucsia, 3 Egeo (Azul eléctrico), 4 Oro (Ámbar); **Oro** por defecto en instalaciones nuevas. El tono personalizado se mantiene. Los nombres de tema pasan a «Oscuro» / «Claro» / «Sistema».
-
-**Cristal solo en la barra de pestañas** (`ui/Glass.kt`, desenfoque real con `GraphicsLayer` + `BlurEffect`, opaca en API < 31 / minSdk 26), que ahora flota sobre las pestañas Panel, Bóveda y Ajustes. **Detalle, editor, desbloqueo, generador y diálogos NO llevan cristal**: ahí pueden estar contraseñas a la vista. Las pestañas solo muestran nombres, usuarios y estadísticas, nunca secretos, y `FLAG_SECURE` sigue igual. La capa grabada se rellena con el fondo opaco antes del desenfoque; sin eso el contenido nítido de debajo se transparentaba por el velo.
-
-Capturas: `docs/capturas/glass-*.png` (emulador, bóveda DEMO ficticia). Sin verificar: móvil físico, fluidez del desenfoque, la pantalla de desbloqueo y el generador tras el cambio, y el contraste del texto sobre cristal con script. Tests: unitarios y lint en verde; instrumentados: 5 pasan y 7 se omiten por precondiciones (servidor `ck.admin`/`ck.pair`, o hay una bóveda en el dispositivo).
+[MIT](LICENSE), © 2026 Takumi-Organization. Las fuentes Outfit y JetBrains Mono se distribuyen bajo SIL OFL 1.1. Dependencias de la app: AndroidX y Compose (Apache 2.0); del servidor: axum, tokio, rusqlite y ed25519-dalek (licencias permisivas MIT, Apache 2.0 o BSD; las dependencias transitivas no se han auditado una a una). El módulo `core` compartido del cliente de escritorio no forma parte de este repositorio y tiene su propia licencia.
