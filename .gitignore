@@ -8,3 +8,5 @@ local.properties
 keystore.properties
 .idea/
 android/.kotlin/
+*.keystore
+*.p12
