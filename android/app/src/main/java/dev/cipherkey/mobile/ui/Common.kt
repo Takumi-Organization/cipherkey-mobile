@@ -18,7 +18,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -46,7 +45,7 @@ import dev.cipherkey.mobile.security.PasswordGenerator
 import java.text.DateFormat
 import java.util.Date
 
-private val Square = RoundedCornerShape(10.dp)
+private val Square = TakumiCut(10.dp)
 
 /** Superficie plana con borde fino: sin sombras ni degradados; la jerarquía sale del tono y la línea. */
 @Composable
@@ -132,16 +131,17 @@ fun Tag(text: String, color: Color = kamiTokens.inkMuted, icon: ImageVector? = n
     }
 }
 
+/** Takumi: el avatar del sitio es un bloque gris estable por dominio (escala de grises) con la inicial. */
 private val AvatarTones = listOf(
-    Color(0xFFE2573B), Color(0xFFD9A441), Color(0xFF3FA37A), Color(0xFF2F8FBF), Color(0xFF7B6CD9),
-    Color(0xFFC94F8B), Color(0xFF8A9A3B), Color(0xFFCC7A3D), Color(0xFF4F6D8A), Color(0xFFA3523A),
+    Color(0xFFF2F2F2), Color(0xFFC9C9C9), Color(0xFF8C8C8C), Color(0xFF5E5E5E), Color(0xFFD9D9D9),
+    Color(0xFFA8A8A8), Color(0xFF747474), Color(0xFF3A3A3A), Color(0xFFB8B8B8), Color(0xFF666666),
 )
 
 /** Bloque plano de color estable por dominio con la inicial. Local: no se consulta ningún servicio de favicons. */
 @Composable
 fun SiteAvatar(title: String, url: String, size: Int = 44, registered: Boolean = false) {
     val tone = AvatarTones[SiteIdentity.toneIndex(SiteIdentity.key(title, url), AvatarTones.size)]
-    val onTone = if (contrast(Color(0xFF14110F), tone) >= contrast(Color.White, tone)) Color(0xFF14110F) else Color.White
+    val onTone = if (contrast(Color.Black, tone) >= contrast(Color.White, tone)) Color.Black else Color.White
     val ink = kamiTokens.ink
     Box(Modifier.size((size + if (registered) 6 else 0).dp)) {
         if (registered) Box(Modifier.size(size.dp).align(Alignment.TopStart).border(1.5.dp, ink, Square))
@@ -303,13 +303,13 @@ tailrec fun Context.findActivity(): FragmentActivity = when (this) {
     else -> error("No hay actividad")
 }
 
-/** Contraseña coloreada por clase de carácter (letras en tinta, números en acento, símbolos en secundario) para leerla sin confundir O/0 o l/1. */
+/** Contraseña coloreada por clase de carácter (letras en gris claro, números en tinta, símbolos en gris apagado) para leerla sin confundir O/0 o l/1. */
 @Composable
 fun colorizedPassword(pwd: String): androidx.compose.ui.text.AnnotatedString {
     val k = kamiTokens
     return androidx.compose.ui.text.buildAnnotatedString {
         pwd.forEach { c ->
-            val col = when { c.isDigit() -> k.accentText; c.isLetter() -> k.ink; else -> k.secondary }
+            val col = when { c.isDigit() -> k.ink; c.isLetter() -> k.inkDim; else -> k.inkMuted }
             withStyle(androidx.compose.ui.text.SpanStyle(color = col)) { append(c) }
         }
     }

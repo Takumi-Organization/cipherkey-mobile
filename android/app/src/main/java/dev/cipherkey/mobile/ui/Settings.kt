@@ -9,7 +9,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -36,28 +35,7 @@ private fun ThemeSection() {
         KChip("Claro", ThemeState.mode == 2, { ThemeState.updateMode(2) })
         KChip("Sistema", ThemeState.mode == 0, { ThemeState.updateMode(0) })
     }
-    Text("ACENTO", style = MaterialTheme.typography.labelMedium, color = k.inkMuted, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
-    @OptIn(ExperimentalLayoutApi::class)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        fun swatch(color: Color, name: String, selected: Boolean, onClick: () -> Unit) = @Composable {
-            val fill = kami(k.dark, color).accent
-            val on = kami(k.dark, color).onAccent
-            Box(
-                Modifier.size(48.dp).background(fill, RoundedCornerShape(10.dp)).border(if (selected) 3.dp else 1.dp, if (selected) k.ink else k.line2, RoundedCornerShape(10.dp))
-                    .clickable(role = Role.RadioButton, onClickLabel = "Elegir acento $name", onClick = onClick)
-                    .semantics { contentDescription = "Acento $name" + if (selected) ", seleccionado" else "" },
-                contentAlignment = Alignment.Center,
-            ) { if (selected) Icon(KI.Check, null, tint = on) }
-        }
-        Accents.PRESETS.forEachIndexed { i, a -> swatch(a.color, a.name, ThemeState.accentIndex == i) { ThemeState.updateAccent(i) }() }
-        swatch(Accents.custom(ThemeState.hue), "personalizado", ThemeState.accentIndex == -1) { ThemeState.updateHue(ThemeState.hue) }()
-    }
-    val name = if (ThemeState.accentIndex in Accents.PRESETS.indices) Accents.PRESETS[ThemeState.accentIndex].name else "Personalizado"
-    Text("$name · el color se aplica a botones, avatares activos y marcadores", style = MaterialTheme.typography.bodySmall, color = k.inkMuted, modifier = Modifier.padding(top = 6.dp))
-    Text("TONO PERSONALIZADO", style = MaterialTheme.typography.labelMedium, color = k.inkMuted, modifier = Modifier.padding(top = 10.dp))
-    Slider(value = ThemeState.hue, onValueChange = { ThemeState.updateHue(it) }, valueRange = 0f..360f,
-        modifier = Modifier.semantics { contentDescription = "Tono del acento personalizado" },
-        colors = SliderDefaults.colors(thumbColor = k.accent, activeTrackColor = k.line3, inactiveTrackColor = k.line2))
+    Text("Sin color de acento: Takumi es monocromo.", style = MaterialTheme.typography.bodySmall, color = k.inkMuted, modifier = Modifier.padding(top = 6.dp))
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -90,7 +68,7 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp + LocalBottomInset.current)) {
         ScreenTitle("AJUSTES", "Ajustes")
-        msg?.let { Row(Modifier.fillMaxWidth().border(1.dp, k.accent, RoundedCornerShape(10.dp)).padding(12.dp)) { Text("> $it", style = MaterialTheme.typography.bodySmall.merge(Mono), color = k.accentText) } }
+        msg?.let { Row(Modifier.fillMaxWidth().border(1.dp, k.accent, TakumiCut(10.dp)).padding(12.dp)) { Text("> $it", style = MaterialTheme.typography.bodySmall.merge(Mono), color = k.accentText) } }
 
         SectionLabel("APARIENCIA", Modifier.padding(top = 16.dp))
         KCard(Modifier.fillMaxWidth()) { ThemeSection() }
@@ -169,7 +147,7 @@ fun SettingsTab(session: VaultSession, onSecureChanged: () -> Unit, onSyncSetup:
         }
 
         SectionLabel("ACERCA DE")
-        Text("CipherKey Android · tipografía Inter y JetBrains Mono (licencia OFL, incluida en la app).", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
+        Text("CipherKey Android · tipografía Outfit y JetBrains Mono (licencia OFL, incluida en la app).", style = MaterialTheme.typography.bodySmall, color = k.inkMuted)
     }
     pairCode?.let { code ->
         AlertDialog(onDismissRequest = { pairCode = null }, title = { Text("Código de emparejamiento") },
@@ -336,7 +314,7 @@ private fun ProximityCard(app: CipherKeyApp) {
 
     KCard(Modifier.fillMaxWidth(), border = if (info.pairingOpen) k.accent else k.line2) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).border(1.dp, if (info.active) k.accent else k.line2, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp).border(1.dp, if (info.active) k.accent else k.line2, TakumiCut(10.dp)), contentAlignment = Alignment.Center) {
                 Icon(KI.Radar, null, tint = if (info.active) k.accentText else k.inkFaint)
             }
             Spacer(Modifier.width(14.dp))

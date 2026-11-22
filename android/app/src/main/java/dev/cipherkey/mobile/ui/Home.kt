@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -108,7 +107,7 @@ private fun IssueRow(title: String, detail: String, count: Int, tone: Color, onC
         Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = !clean, role = Role.Button, onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(36.dp).border(1.dp, if (clean) k.ok else tone, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp).border(1.dp, if (clean) k.ok else tone, TakumiCut(10.dp)), contentAlignment = Alignment.Center) {
             if (clean) Icon(KI.Check, "Sin problemas", Modifier.size(18.dp), tint = k.ok)
             else Text("$count", style = MaterialTheme.typography.labelLarge, color = tone)
         }
@@ -158,7 +157,7 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
             Text(summary, Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodyMedium, color = k.inkDim, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
 
-        Row(Modifier.fillMaxWidth().padding(top = 20.dp).border(1.dp, k.line2, RoundedCornerShape(10.dp)).height(IntrinsicSize.Min)) {
+        Row(Modifier.fillMaxWidth().padding(top = 20.dp).border(1.dp, k.line2, TakumiCut(10.dp)).height(IntrinsicSize.Min)) {
             StatCell("${records.size}", "ENTRADAS", Modifier.weight(1f))
             Box(Modifier.width(1.dp).fillMaxHeight().background(k.line2))
             StatCell("$favorites", "FAVORITAS", Modifier.weight(1f))
@@ -168,7 +167,7 @@ fun DashboardTab(session: VaultSession, onOpen: (String) -> Unit, onSync: () -> 
 
         AnimatedVisibility(sync.conflicts > 0, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
             Row(
-                Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(10.dp)).clickable(role = Role.Button) { onConflicts() }.padding(14.dp),
+                Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, TakumiCut(10.dp)).clickable(role = Role.Button) { onConflicts() }.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(KI.Warn, null, tint = k.error)
@@ -261,7 +260,7 @@ fun RecordRow(r: Record, onClick: () -> Unit, health: VaultHealth.Report? = null
 private fun VaultFab(onClick: () -> Unit) {
     val k = kamiTokens
     Row(
-        Modifier.heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp)).background(k.accent).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 18.dp),
+        Modifier.heightIn(min = 56.dp).clip(TakumiCut(10.dp)).background(k.accent).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(KI.Plus, null, tint = k.onAccent); Spacer(Modifier.width(8.dp))

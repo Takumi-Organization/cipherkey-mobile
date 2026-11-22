@@ -7,7 +7,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,7 +71,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
 
     Scaffold(
         containerColor = k.paper,
-        snackbarHost = { SnackbarHost(snack) { d -> Snackbar(d, shape = RoundedCornerShape(10.dp), containerColor = k.ink, contentColor = k.paper) } },
+        snackbarHost = { SnackbarHost(snack) { d -> Snackbar(d, shape = TakumiCut(10.dp), containerColor = k.ink, contentColor = k.paper) } },
         topBar = {
             KTopBar("Detalle", onBack) {
                 KIconButton(if (r.favorite) KI.StarFilled else KI.Star, if (r.favorite) "Quitar de favoritas" else "Marcar como favorita",
@@ -83,7 +82,7 @@ fun DetailScreen(session: VaultSession, uuid: String, onBack: () -> Unit, onEdit
     ) { pad ->
         Column(Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 32.dp)) {
             if (r.conflict != null) {
-                Row(Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, RoundedCornerShape(10.dp)).clickable(role = Role.Button) { onConflict() }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp).border(1.dp, k.error, TakumiCut(10.dp)).clickable(role = Role.Button) { onConflict() }.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(KI.Warn, null, tint = k.error); Spacer(Modifier.width(12.dp))
                     Text("Conflicto de sincronización: toca para resolver", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 }

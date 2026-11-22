@@ -6,14 +6,16 @@ import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,9 +24,8 @@ import dev.cipherkey.mobile.R
 import dev.cipherkey.mobile.data.Prefs
 
 /**
- * Identidad «Ryoku Glass» (2026-11-19): neutros fríos, filetes finos, un solo acento saturado, Inter para la interfaz y
- * JetBrains Mono solo para datos (contraseñas, códigos). Sin degradados, sin sombras, sin colores dinámicos del sistema;
- * el cristal (`Glass.kt`) solo en la barra de pestañas flotante, nunca sobre pantallas con secretos a la vista.
+ * Identidad Takumi (2026-11-22): negro y tinta, monocromo estricto, esquinas con corte diagonal, Outfit para la interfaz y
+ * JetBrains Mono para datos (contraseñas, códigos) y etiquetas. Sin degradados, sombras, cristal ni colores dinámicos.
  */
 @Immutable
 class Kami(
@@ -82,27 +83,24 @@ fun ensureContrast(c: Color, bg: Color, target: Float, toward: Color): Color {
 private val NIGHT_INK = Color(0xFFECEFF4)
 private val DAY_INK = Color(0xFF14171C)
 
-fun kami(dark: Boolean, accentBase: Color): Kami {
-    val paper = if (dark) Color(0xFF0F1115) else Color(0xFFF4F5F7)
-    val ink = if (dark) NIGHT_INK else DAY_INK
-    // relleno: en claro se oscurece lo justo para llegar a 4,5:1 contra el papel (lleva texto blanco encima)
-    val fill = if (dark) accentBase else ensureContrast(accentBase, paper, 4.5f, Color.Black)
-    val onFill = if (contrast(Color(0xFF14110F), fill) >= contrast(Color.White, fill)) Color(0xFF14110F) else Color.White
-    val text = if (dark) ensureContrast(accentBase, paper, 4.5f, Color.White) else ensureContrast(accentBase, paper, 4.5f, Color.Black)
+/**
+ * Takumi (tokens.json): sin color de acento, así que `accentBase` se ignora (la preferencia se conserva por compatibilidad).
+ * Error / aviso / correcto = tinta: se distinguen por icono y texto, nunca por color.
+ */
+fun kami(dark: Boolean, @Suppress("UNUSED_PARAMETER") accentBase: Color): Kami {
+    val ink = if (dark) Color(0xFFF2F2F2) else Color(0xFF0A0A0A)
+    val paper = if (dark) Color(0xFF000000) else Color(0xFFF4F4F4)
     return Kami(
         dark = dark, paper = paper,
-        raised = if (dark) Color(0xFF171A20) else Color(0xFFFFFFFF),
-        high = if (dark) Color(0xFF232830) else Color(0xFFE9ECF0),
+        raised = if (dark) Color(0xFF080808) else Color(0xFFFFFFFF),
+        high = if (dark) Color(0xFF111111) else Color(0xFFEBEBEB),
         ink = ink,
-        inkDim = if (dark) Color(0xFFB4BBC7) else Color(0xFF4A515C),
-        inkMuted = if (dark) Color(0xFF8E97A6) else Color(0xFF5F6773),
-        inkFaint = if (dark) Color(0xFF5F6877) else Color(0xFF9AA2AE),
-        line1 = ink.copy(alpha = 0.10f), line2 = ink.copy(alpha = 0.16f), line3 = ink.copy(alpha = 0.30f),
-        accent = fill, onAccent = onFill, accentText = text,
-        secondary = if (dark) Color(0xFF7FC4EC) else Color(0xFF0B6B99),
-        error = if (dark) Color(0xFFFF7A70) else Color(0xFFB3261E),
-        warn = if (dark) Color(0xFFF0B25E) else Color(0xFF8A5A00),
-        ok = if (dark) Color(0xFF6FD3A6) else Color(0xFF1B6B49),
+        inkDim = if (dark) Color(0xFFC9C9C9) else Color(0xFF333333),
+        inkMuted = if (dark) Color(0xFF8C8C8C) else Color(0xFF6B6B6B),
+        inkFaint = if (dark) Color(0xFF4A4A4A) else Color(0xFFB0B0B0),
+        line1 = if (dark) Color(0xFF1C1C1C) else Color(0xFFE0E0E0), line2 = if (dark) Color(0xFF3A3A3A) else Color(0xFFC0C0C0), line3 = if (dark) Color(0xFF3A3A3A) else Color(0xFFC0C0C0),
+        accent = ink, onAccent = paper, accentText = ink,
+        secondary = if (dark) Color(0xFF8C8C8C) else Color(0xFF6B6B6B), error = ink, warn = ink, ok = ink,
     )
 }
 
@@ -124,32 +122,39 @@ object ThemeState {
 
 // ------------------------------------------------------------------ tipografía: Inter (interfaz) y JetBrains Mono (datos), ambas OFL
 
-val InterFamily = FontFamily(
-    Font(R.font.inter_regular, FontWeight.Normal), Font(R.font.inter_medium, FontWeight.Medium),
-    Font(R.font.inter_semibold, FontWeight.SemiBold), Font(R.font.inter_bold, FontWeight.Bold),
-)
-val DataMono = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), Font(R.font.jetbrains_mono_semibold, FontWeight.Bold), Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold))
+@OptIn(ExperimentalTextApi::class)
+private fun outfit(w: Int, key: FontWeight) = Font(R.font.outfit_variable, key, variationSettings = FontVariation.Settings(FontVariation.weight(w)))
+/** Outfit: pesos de la app → pesos Takumi (lo «Bold», cifras y títulos grandes, pasa a 200; el cuerpo a 300; lo enfatizado a 500). */
+val InterFamily = FontFamily(outfit(300, FontWeight.Normal), outfit(400, FontWeight.Medium), outfit(500, FontWeight.SemiBold), outfit(200, FontWeight.Bold))
+val DataMono = FontFamily(Font(R.font.jetbrains_mono_regular, FontWeight.Normal), Font(R.font.jetbrains_mono_regular, FontWeight.Bold), Font(R.font.jetbrains_mono_regular, FontWeight.SemiBold))
 
 // Cifras tabulares; «calt 0» solo importa en la fuente de datos (JetBrains Mono fusiona «->» o «==» y en una contraseña eso engaña).
 private fun t(size: Int, line: Int, bold: Boolean = false, spacing: Float = 0f) = TextStyle(
-    fontFamily = InterFamily, fontSize = size.sp, lineHeight = line.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal,
-    letterSpacing = spacing.sp, fontFeatureSettings = "tnum",
+    fontFamily = InterFamily, fontSize = size.sp, lineHeight = line.sp,
+    fontWeight = if (!bold) FontWeight.Normal else if (size >= 28) FontWeight.Bold else FontWeight.SemiBold,
+    letterSpacing = (if (bold && size >= 28) 2f else spacing).sp, fontFeatureSettings = "tnum",
 )
+/** Etiquetas: JetBrains Mono espaciada (los kickers ya vienen en MAYÚSCULAS). */
+private fun lab(size: Int, line: Int) = TextStyle(fontFamily = DataMono, fontSize = size.sp, lineHeight = line.sp, letterSpacing = 1.2.sp, fontFeatureSettings = "tnum")
 
 private val KamiTypography = Typography(
     displayLarge = t(56, 60, true), displayMedium = t(40, 48, true), displaySmall = t(32, 40, true),
     headlineLarge = t(28, 36, true), headlineMedium = t(28, 36, true), headlineSmall = t(20, 28, true),
     titleLarge = t(20, 28, true), titleMedium = t(16, 24, true), titleSmall = t(14, 20, true),
     bodyLarge = t(15, 22), bodyMedium = t(14, 22), bodySmall = t(12, 18),
-    labelLarge = t(14, 18, true), labelMedium = t(12, 16, true, 0.3f), labelSmall = t(11, 16, true, 0.2f),
+    labelLarge = lab(13, 18), labelMedium = lab(12, 16), labelSmall = lab(11, 16),
 )
 
 /** Estilo para datos (contraseñas, códigos): JetBrains Mono, sin ligaduras. */
 val Mono = TextStyle(fontFamily = DataMono, fontSize = 14.sp, lineHeight = 22.sp, fontFeatureSettings = "calt 0, liga 0")
 
+/** Corte diagonal del logo en la esquina superior derecha (máx. 22 dp); el resto, ángulo recto. */
+fun TakumiCut(cut: androidx.compose.ui.unit.Dp) = CutCornerShape(topStart = 0.dp, topEnd = cut.coerceAtMost(22.dp), bottomEnd = 0.dp, bottomStart = 0.dp)
+val TkSm = TakumiCut(10.dp)
+val TkLg = TakumiCut(22.dp)
+
 private val KamiShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp), small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp), extraLarge = RoundedCornerShape(20.dp),
+    extraSmall = TakumiCut(6.dp), small = TkSm, medium = TakumiCut(14.dp), large = TkLg, extraLarge = TkLg,
 )
 
 private fun scheme(k: Kami): ColorScheme {

@@ -141,7 +141,7 @@ fun GeneratorSheet(onDismiss: () -> Unit, onUse: ((String) -> Unit)?) {
     var o by remember { mutableStateOf(PasswordGenerator.Options()) }
     var out by remember { mutableStateOf(PasswordGenerator.generate(o)) }
     fun regen(n: PasswordGenerator.Options = o) { o = n; out = try { PasswordGenerator.generate(n) } catch (_: IllegalArgumentException) { "" } }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = k.raised, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = k.raised, shape = TkLg,
         dragHandle = { Box(Modifier.padding(top = 12.dp).size(width = 36.dp, height = 3.dp).background(k.line3)) }) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("GENERADOR", style = MaterialTheme.typography.labelMedium, color = k.accentText)

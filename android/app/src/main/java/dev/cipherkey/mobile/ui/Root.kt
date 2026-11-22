@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -103,18 +102,18 @@ private fun KNavBar(selected: Int, onSelect: (Int) -> Unit) {
     val k = kamiTokens
     Row(
         Modifier.navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp).fillMaxWidth().height(64.dp)
-            .glass(RoundedCornerShape(20.dp)).padding(5.dp),
+            .glass(TakumiCut(20.dp)).padding(5.dp),
     ) {
         listOf(Triple("Panel", KI.Shield, 0), Triple("Bóveda", KI.Key, 1), Triple("Ajustes", KI.Settings, 2)).forEach { (label, icon, i) ->
             val on = selected == i
             Column(
-                Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp))
-                    .background(if (on) k.accent.copy(alpha = if (k.dark) 0.16f else 0.11f) else androidx.compose.ui.graphics.Color.Transparent)
+                Modifier.weight(1f).fillMaxHeight().clip(TakumiCut(14.dp))
+                    .background(if (on) k.ink else androidx.compose.ui.graphics.Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(i) }.semantics { this.selected = on; contentDescription = label },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
             ) {
-                Icon(icon, null, Modifier.size(24.dp), tint = if (on) k.accentText else k.inkMuted)
-                Text(label, style = MaterialTheme.typography.labelSmall, color = if (on) k.accentText else k.inkMuted, modifier = Modifier.padding(top = 2.dp))
+                Icon(icon, null, Modifier.size(24.dp), tint = if (on) k.paper else k.inkMuted)
+                Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = if (on) k.paper else k.inkMuted, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }
@@ -123,7 +122,7 @@ private fun KNavBar(selected: Int, onSelect: (Int) -> Unit) {
 @Composable
 private fun StatBlock(value: Int, label: String, tone: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     val k = kamiTokens
-    Column(modifier.border(1.dp, if (value > 0) tone else k.line2, RoundedCornerShape(10.dp)).padding(12.dp)) {
+    Column(modifier.border(1.dp, if (value > 0) tone else k.line2, TakumiCut(10.dp)).padding(12.dp)) {
         Text("$value", style = MaterialTheme.typography.headlineMedium, color = if (value > 0) tone else k.inkMuted)
         Text(label, style = MaterialTheme.typography.labelSmall, color = k.inkMuted)
     }
@@ -171,7 +170,7 @@ private fun SasDialog() {
                 Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Código de seguridad: " + r.sas.toList().joinToString(" ") }, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     r.sas.forEachIndexed { i, c ->
                         if (i == 3) Spacer(Modifier.width(12.dp))
-                        Box(Modifier.padding(horizontal = 2.dp).size(width = 38.dp, height = 56.dp).border(1.5.dp, k.accent, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.padding(horizontal = 2.dp).size(width = 38.dp, height = 56.dp).border(1.5.dp, k.accent, TakumiCut(10.dp)), contentAlignment = Alignment.Center) {
                             Text("$c", fontSize = 30.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = k.accentText)
                         }
                     }

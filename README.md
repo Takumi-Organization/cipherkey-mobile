@@ -129,8 +129,8 @@ Bugs que salieron de esa verificación y están corregidos: indicador de sync qu
 - La lista de sufijos públicos del emparejador es mínima, no la Public Suffix List completa.
 - Chrome no usa servicios de terceros por defecto; la prueba de autofill en navegador real no se ha hecho.
 
-## Identidad visual: Ryoku Glass (2026-11-19)
-Rediseño sobre la identidad común de Adrián (vault: `Estilo visual Ryoku Glass`), que sustituye a Ryoku Kami: neutros fríos (`#0F1115` / `#171A20` / `#232830`; claro `#F4F5F7`), filetes de 1 dp, radios 6-20, **Inter** para la interfaz y **JetBrains Mono solo para datos** (contraseñas, códigos; sin ligaduras, para que `->` o `==` no se fundan en una contraseña). Komiki Mono y su licencia se retiran; Inter y JetBrains Mono (OFL) van en `assets/licenses/`. Se quitan los prefijos `NN // ` de las etiquetas.
+## Identidad visual: Takumi (2026-11-22)
+Sustituye a Ryoku Glass. Negro `#000` y tinta `#F2F2F2` (claro «papel» `#F4F4F4`), monocromo estricto, esquinas rectas con corte diagonal arriba a la derecha, Outfit + JetBrains Mono (licencias en `docs/licencias/`), seleccionado por inversión, sin cristal ni desenfoque. Error, aviso y correcto se leen por icono y texto, no por color; los avatares de sitio son grises estables por dominio. El selector de acento se retiró (la preferencia guardada se conserva sin efecto).
 
 Acentos: la preferencia guarda el **índice**, así que se conserva el orden y cambian color y nombre: 0 Bermellón (antes Naranja), 1 Lima, 2 Fucsia, 3 Egeo (Azul eléctrico), 4 Oro (Ámbar); **Oro** por defecto en instalaciones nuevas. El tono personalizado se mantiene. Los nombres de tema pasan a «Oscuro» / «Claro» / «Sistema».
 

@@ -1,7 +1,7 @@
 <resources>
     <!-- Ventana en Grafito (oscuro). -->
     <style name="Theme.CipherKey" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#211D1A</item>
+        <item name="android:windowBackground">#000000</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

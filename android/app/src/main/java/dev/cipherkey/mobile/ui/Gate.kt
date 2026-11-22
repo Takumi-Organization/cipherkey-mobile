@@ -7,7 +7,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
@@ -214,7 +213,7 @@ fun UnlockScreen(session: VaultSession, autoBiometric: Boolean) {
                 }
             })
             if (bioReady) Box(
-                Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                Modifier.size(56.dp).graphicsLayer { alpha = pulse }.border(2.dp, k.accent, TkSm)
                     .clickable(role = Role.Button, onClickLabel = "Desbloquear con huella o rostro") { tryBiometric() },
                 contentAlignment = Alignment.Center,
             ) { Icon(KI.Fingerprint, "Usar huella o rostro", Modifier.size(30.dp), tint = k.accentText) }
