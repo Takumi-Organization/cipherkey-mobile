@@ -2,19 +2,18 @@ plugins {
     `java-library`
 }
 
-// Módulo compartido con el escritorio: se compila desde sus fuentes originales (una sola copia del formato y del protocolo).
-val coreDir = rootProject.file(providers.gradleProperty("ck.core.dir").get())
-
+// Módulo compartido con el escritorio (formato, cripto, fusión y sincronización). Copia de sus fuentes en `core/src`
+// (ver core/README.md): el repositorio es autocontenido y compila sin el cliente de escritorio.
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
 sourceSets {
-    main { java.srcDir(File(coreDir, "src/main/java")) }
+    main { java.srcDir("src/main/java") }
     test {
-        java.srcDir(File(coreDir, "src/test/java"))
-        resources.srcDir(File(coreDir, "src/test/resources"))
+        java.srcDir("src/test/java")
+        resources.srcDir("src/test/resources")
     }
 }
 

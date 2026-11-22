@@ -55,7 +55,7 @@ adb install -r cipherkey-mobile-0.1.0.apk
 
 Requisitos: JDK 17 o superior (el proyecto compila a Java 17; verificado con JDK 27), Android SDK con la plataforma 37 (`compileSdk 37`, `targetSdk 36`, `minSdk 26`) y el Gradle wrapper incluido (en `android/`).
 
-> **Importante:** el formato, la criptografía, la fusión y la sincronización viven en el módulo `core` del cliente de escritorio de CipherKey, que Android compila como fuente. La ruta se configura con `ck.core.dir` en `android/gradle.properties` (por defecto `../../CipherKey-Rediseño/CipherKey/core`) y **ese módulo no está en este repositorio**. Sin él, la app no compila; hay que dejarlo en esa ruta o apuntar `ck.core.dir` a una copia.
+> El formato, la criptografía, la fusión y la sincronización viven en el módulo `:core` (`android/core`), una **copia de las fuentes** del módulo compartido con el cliente de escritorio de CipherKey (origen y commit en [`android/core/README.md`](android/core/README.md)). El repositorio compila por sí solo.
 
 ```
 cd android

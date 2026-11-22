@@ -5,7 +5,7 @@ plugins {
 
 val appVersion = "0.1.0"
 val (vMajor, vMinor, vPatch) = appVersion.split(".").map { it.toInt() }
-val coreDir = rootProject.file(providers.gradleProperty("ck.core.dir").get())
+val coreDir = rootProject.file("core") // copia de las fuentes del módulo compartido (ver core/README.md)
 
 android {
     namespace = "dev.cipherkey.mobile"
